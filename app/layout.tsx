@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "London Tycoon — 伦敦大富翁",
-  description: "在真实伦敦方位的动画城市地图上，体验四位真人与电脑玩家的地产和虚构股票策略游戏。",
+  description: "创建在线房间，邀请朋友在真实伦敦方位的动画地图上一起玩地产与虚构股票策略游戏。",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };
 
