@@ -83,6 +83,22 @@ export async function POST(request:Request){
     }
     const token=typeof body.token==="string"?body.token:"";const member=await authenticate(code,token);
     if(!member)return json({error:"你不是这个房间的成员。"},403);
+    if(action==="leave"){
+      const room=await roomView(code);if(!room)return json({error:"没有找到这个房间。"},404);
+      if(room.status!=="lobby")return json({error:"游戏已经开始，无法从等待页面取消房间。"},409);
+      if(member.is_host){
+        await env.DB.batch([
+          env.DB.prepare("DELETE FROM room_players WHERE room_code=?").bind(code),
+          env.DB.prepare("DELETE FROM rooms WHERE code=?").bind(code),
+        ]);
+        return json({ok:true,cancelled:true});
+      }
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM room_players WHERE room_code=? AND id=?").bind(code,member.id),
+        env.DB.prepare("UPDATE rooms SET updated_at=? WHERE code=?").bind(now,code),
+      ]);
+      return json({ok:true,cancelled:false});
+    }
     if(action==="start"){
       if(!member.is_host)return json({error:"只有房主可以开始游戏。"},403);
       const state=JSON.stringify(body.gameState??null);if(state.length>180000)return json({error:"游戏状态过大。"},413);

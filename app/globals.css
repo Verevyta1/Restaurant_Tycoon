@@ -129,3 +129,7 @@
 .watercolor-map .map-legend{display:none}
 .watercolor-map .moving-pawn{transform:translate(42px,-25px)}
 @media(max-width:1100px){.watercolor-map .pencil-stop .stop-copy{min-width:0}}
+
+/* v8: explicit lobby exit and host cancellation */
+.lobby-controls{display:flex;align-items:center;justify-content:flex-end;gap:9px}.lobby-controls>b{font-size:10px;color:var(--muted)}.lobby-controls .primary{margin:0}.cancel-room{border:1px solid #c83b3866;background:#fffaf1;color:#b43331;padding:11px 14px;font-size:8px;font-weight:900;letter-spacing:.04em}.cancel-room:hover{background:#c83b38;color:#fff}.cancel-room:disabled{opacity:.45;cursor:wait}
+@media(max-width:650px){.lobby-controls{width:100%;justify-content:space-between}.lobby-controls .primary,.lobby-controls .cancel-room{flex:1}}
