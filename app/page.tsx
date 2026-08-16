@@ -2,291 +2,161 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type SpaceType = "start" | "property" | "event" | "tax" | "stock" | "bonus";
-type Phase = "roll" | "decision" | "manage" | "gameover";
-type Player = { name:string; ai:boolean; color:string; cash:number; pos:number; properties:number[]; holdings:Record<string,number>; remoteId?:string };
-type Stock = { symbol:string; name:string; price:number; prev:number; color:string };
-type RoomMember = { id:string; name:string; seat:number; isHost:boolean };
-type RoomAuth = { code:string; playerId:string; token:string; isHost:boolean };
-type SharedGame = { players:Player[];stocks:Stock[];current:number;phase:Phase;round:number;dice:number[];pending:number|null;message:string;log:string[] };
+type Lang="zh"|"en";
+type SpaceType="start"|"property"|"event"|"stock"|"bonus";
+type Phase="roll"|"buy"|"build"|"manage"|"gameover";
+type BuildKind="house"|"hotel"|"shop";
+type Development={kind:BuildKind;level:number};
+type Player={name:string;ai:boolean;color:string;cash:number;pos:number;properties:number[];developments:Record<number,Development>;holdings:Record<string,number>;remoteId?:string};
+type Stock={symbol:string;name:string;cn:string;price:number;prev:number;color:string};
+type Notice={key:string;args?:Record<string,string|number>};
+type RoomMember={id:string;name:string;seat:number;isHost:boolean};
+type RoomAuth={code:string;playerId:string;token:string;isHost:boolean};
+type SharedGame={players:Player[];stocks:Stock[];current:number;phase:Phase;round:number;dice:number[];pending:number|null;notice:Notice;log:Notice[];stayRoll:number|null};
 
-const COLORS = ["#e33a36", "#2e72c7", "#158a79", "#e2a62a"];
-const SPACES:{name:string; cn:string; type:SpaceType; price?:number; rent?:number; color?:string; icon:string}[] = [
-  {name:"King’s Cross",cn:"国王十字",type:"start",icon:"⌂"},
-  {name:"Camden Market",cn:"卡姆登市场",type:"property",price:200,rent:38,color:"#9a6a45",icon:"◆"},
-  {name:"Abbey Road",cn:"艾比路",type:"property",price:240,rent:48,color:"#4b9b75",icon:"♫"},
-  {name:"Notting Hill",cn:"诺丁山",type:"property",price:320,rent:68,color:"#4b9b75",icon:"⌂"},
-  {name:"Hyde Park",cn:"海德公园",type:"bonus",icon:"♣"},
-  {name:"Buckingham Palace",cn:"白金汉宫",type:"property",price:440,rent:102,color:"#e7b72f",icon:"♛"},
-  {name:"Westminster",cn:"威斯敏斯特",type:"property",price:360,rent:78,color:"#e3563f",icon:"▥"},
-  {name:"Big Ben",cn:"大本钟",type:"property",price:380,rent:84,color:"#e3563f",icon:"♜"},
-  {name:"London Eye",cn:"伦敦眼",type:"bonus",icon:"◉"},
-  {name:"Borough Market",cn:"博罗市场",type:"stock",icon:"↗"},
-  {name:"The Shard",cn:"碎片大厦",type:"property",price:300,rent:62,color:"#78b7dc",icon:"▲"},
-  {name:"Tower Bridge",cn:"伦敦塔桥",type:"bonus",icon:"♛"},
-  {name:"Canary Wharf",cn:"金丝雀码头",type:"property",price:340,rent:72,color:"#d24676",icon:"▥"},
-  {name:"Greenwich",cn:"格林尼治",type:"property",price:280,rent:58,color:"#d24676",icon:"◷"},
-  {name:"Market News",cn:"市场新闻",type:"event",icon:"✦"},
-  {name:"St Paul’s",cn:"圣保罗大教堂",type:"property",price:260,rent:52,color:"#78b7dc",icon:"♜"},
-  {name:"Stock Exchange",cn:"伦敦交易所",type:"stock",icon:"▥"},
-  {name:"British Museum",cn:"大英博物馆",type:"property",price:220,rent:42,color:"#9a6a45",icon:"▥"},
-  {name:"Soho Chance",cn:"苏豪奇遇",type:"event",icon:"?"},
-  {name:"Covent Garden",cn:"科文特花园",type:"tax",icon:"£"},
+const COLORS=["#e33a36","#2e72c7","#158a79","#e2a62a"];
+const SPACES:{name:string;cn:string;type:SpaceType;price?:number;rent?:number;color?:string;commercial?:boolean}[]=[
+  {name:"King’s Cross",cn:"国王十字",type:"start"},
+  {name:"Camden Market",cn:"卡姆登市场",type:"property",price:220,rent:18,color:"#9a6a45",commercial:true},
+  {name:"Abbey Road",cn:"艾比路",type:"property",price:240,rent:20,color:"#4b9b75"},
+  {name:"Notting Hill",cn:"诺丁山",type:"property",price:320,rent:28,color:"#4b9b75"},
+  {name:"Hyde Park",cn:"海德公园",type:"bonus"},
+  {name:"Buckingham Palace",cn:"白金汉宫",type:"property",price:440,rent:42,color:"#e7b72f"},
+  {name:"Westminster",cn:"威斯敏斯特",type:"property",price:360,rent:34,color:"#e3563f"},
+  {name:"Big Ben",cn:"大本钟",type:"property",price:380,rent:36,color:"#e3563f"},
+  {name:"London Eye",cn:"伦敦眼",type:"bonus"},
+  {name:"Borough Market",cn:"博罗市场",type:"property",price:300,rent:27,color:"#ef8f38",commercial:true},
+  {name:"The Shard",cn:"碎片大厦",type:"property",price:420,rent:40,color:"#78b7dc",commercial:true},
+  {name:"Tower Bridge",cn:"伦敦塔桥",type:"bonus"},
+  {name:"Canary Wharf",cn:"金丝雀码头",type:"property",price:400,rent:38,color:"#d24676",commercial:true},
+  {name:"Greenwich",cn:"格林尼治",type:"property",price:280,rent:24,color:"#d24676"},
+  {name:"Market News",cn:"市场新闻",type:"event"},
+  {name:"St Paul’s",cn:"圣保罗大教堂",type:"property",price:340,rent:31,color:"#78b7dc"},
+  {name:"Stock Exchange",cn:"伦敦交易所",type:"stock"},
+  {name:"British Museum",cn:"大英博物馆",type:"property",price:260,rent:22,color:"#9a6a45"},
+  {name:"Soho Chance",cn:"苏豪奇遇",type:"event"},
+  {name:"Covent Garden",cn:"科文特花园",type:"property",price:310,rent:29,color:"#ef8f38",commercial:true},
 ];
 
-const INITIAL_STOCKS:Stock[] = [
-  {symbol:"THM",name:"泰晤士航运",price:64,prev:64,color:"#6abbd2"},
-  {symbol:"RDL",name:"红线交通",price:48,prev:48,color:"#e33a36"},
-  {symbol:"CRN",name:"皇冠酒店",price:82,prev:82,color:"#e2a62a"},
-  {symbol:"FOG",name:"雾都科技",price:56,prev:56,color:"#7e65b5"},
-  {symbol:"BGB",name:"大钟传媒",price:41,prev:41,color:"#335e91"},
-  {symbol:"TEA",name:"午茶集团",price:37,prev:37,color:"#a96b49"},
-  {symbol:"LME",name:"狮心能源",price:72,prev:72,color:"#158a79"},
-  {symbol:"UMB",name:"雨伞保险",price:53,prev:53,color:"#52667d"},
+const INITIAL_STOCKS:Stock[]=[
+  {symbol:"THM",name:"Thames Shipping",cn:"泰晤士航运",price:64,prev:64,color:"#6abbd2"},{symbol:"RDL",name:"Red Line Transit",cn:"红线交通",price:48,prev:48,color:"#e33a36"},
+  {symbol:"CRN",name:"Crown Hotels",cn:"皇冠酒店",price:82,prev:82,color:"#e2a62a"},{symbol:"FOG",name:"Fog Tech",cn:"雾都科技",price:56,prev:56,color:"#7e65b5"},
+  {symbol:"BGB",name:"Big Bell Media",cn:"大钟传媒",price:41,prev:41,color:"#335e91"},{symbol:"TEA",name:"Afternoon Tea Group",cn:"午茶集团",price:37,prev:37,color:"#a96b49"},
+  {symbol:"LME",name:"Lion Energy",cn:"狮心能源",price:72,prev:72,color:"#158a79"},{symbol:"UMB",name:"Umbrella Insurance",cn:"雨伞保险",price:53,prev:53,color:"#52667d"},
 ];
 
-const MAP_POINTS = [
-  [50,15],[39,10],[21,23],[13,40],[23,52],[34,62],[41,67],[44,63],[49,60],[59,57],
-  [64,53],[72,52],[88,49],[91,70],[82,62],[61,36],[65,29],[43,29],[39,42],[48,43]
-];
-const RIVER_POINTS = [[-4,63],[12,61],[27,68],[43,68],[57,62],[70,56],[84,59],[104,73]];
-const lineStyle = (a:number[],b:number[]) => { const dx=b[0]-a[0],dy=b[1]-a[1]; return {left:`${a[0]}%`,top:`${a[1]}%`,width:`${Math.hypot(dx,dy)}%`,transform:`rotate(${Math.atan2(dy,dx)*180/Math.PI}deg)`}; };
+const MAP_POINTS=[[50,15],[38,11],[21,23],[12,40],[22,52],[33,63],[40,70],[45,65],[50,60],[59,58],[65,53],[73,52],[87,48],[91,70],[82,63],[61,35],[67,27],[43,28],[38,42],[49,43]];
+const RIVER_POINTS=[[-4,63],[12,61],[27,68],[43,68],[57,62],[70,56],[84,59],[104,73]];
+const LABEL_POS=["e","n","n","w","w","w","s","e","s","w","s","n","n","s","s","n","e","n","w","s"];
+const DEV_POS=[[28,-24],[-28,8],[-26,8],[-28,-15],[26,-18],[-30,-22],[28,4],[28,-20],[-28,-18],[-30,2],[28,6],[-28,-20],[28,-18],[-25,-22],[27,-18],[-28,7],[28,8],[-28,7],[28,-18],[28,8]];
+const lineStyle=(a:number[],b:number[])=>{const dx=b[0]-a[0],dy=b[1]-a[1];return{left:`${a[0]}%`,top:`${a[1]}%`,width:`${Math.hypot(dx,dy)}%`,transform:`rotate(${Math.atan2(dy,dx)*180/Math.PI}deg)`}};
+const money=(n:number)=>`£${Math.round(n).toLocaleString("en-GB")}`;
+const levelMax=(kind:BuildKind)=>kind==="house"?4:3;
+const buildCost=(space:(typeof SPACES)[number],kind:BuildKind,dev?:Development)=>{
+  const base=space.price||0,same=dev?.kind===kind;
+  if(kind==="house")return Math.round(base*(same?.26:.36));
+  if(kind==="hotel")return Math.round(base*(same?.48:.9));
+  return Math.round(base*(same?.4:.72));
+};
+const rentFor=(space:(typeof SPACES)[number],dev?:Development,nights=1)=>{
+  const base=space.rent||0;if(!dev)return base;
+  if(dev.kind==="house")return Math.round(base*(1+dev.level*1.45));
+  if(dev.kind==="shop")return Math.round(base*(2.4+dev.level*1.6));
+  return Math.round(base*(1.5+dev.level*1.15)*nights);
+};
+const devValue=(space:(typeof SPACES)[number],dev?:Development)=>dev?buildCost(space,dev.kind)*dev.level:0;
 
-const money = (n:number) => `£${Math.round(n).toLocaleString("en-GB")}`;
+const UI={
+ zh:{back:"返回",online:"在线与朋友玩",local:"同一台电脑玩",setupTitle:"谁来征服伦敦？",setupDesc:"一局固定 4 个席位，可自由选择真人或电脑玩家。",human:"真人",computer:"电脑",start:"进入伦敦",player:"玩家",startCash:"起始资金",length:"游戏长度",win:"胜利条件",rounds:"20 回合",wealth:"最高总资产",onlineTitle:"和朋友一起征服伦敦",onlineDesc:"创建房间后复制邀请链接；朋友打开链接即可加入。",create:"创建房间",join:"加入房间",nickname:"你的昵称",roomCode:"房间代码",createRoom:"创建邀请房间",joinRoom:"加入这局游戏",connecting:"正在连接…",exit:"退出房间",waitingTitle:"等待玩家上车",waitingDesc:"最多 4 位真人；空余席位由电脑补上。",copy:"复制邀请链接",copied:"已复制 ✓",seat:"席位",waiting:"等待朋友加入…",host:"房主",sync:"房间实时同步中",startGame:"开始游戏",waitHost:"等待房主开始游戏…",assets:"玩家资产",ai:"电脑玩家",person:"真人玩家",total:"总资产",property:"处地产",buildings:"栋建筑",shares:"股",activity:"伦敦动态",progress:"当前进度",round:"回合",market:"股票市场",location:"当前位置",roll:"掷骰子",buy:"购买地产",skip:"暂不操作",build:"建设地产",trade:"交易股票",end:"结束回合",waitTurn:"等待 {name} 操作…",stockTitle:"伦敦虚拟股票市场",stockNote:"以下 8 支股票均为游戏内虚构资产，价格每回合随机波动。",held:"持有",sell:"卖出",buyShare:"买入 1 股",winner:"成为伦敦首富！",again:"再玩一局",commercial:"商业地块",residential:"普通地块",baseRent:"空地租金",house:"住宅",hotel:"酒店",shop:"超市",buildHouse:"加盖住宅",buildHotel:"建设酒店",buildShop:"建设超市",max:"已满级",nights:"酒店入住 {n} 晚",legend:"地产建筑",perNight:"每晚",level:"级"},
+ en:{back:"Back",online:"Play online with friends",local:"Play on one computer",setupTitle:"Who will conquer London?",setupDesc:"Four seats per game. Choose any mix of people and computer players.",human:"Human",computer:"Computer",start:"Enter London",player:"Player",startCash:"Starting cash",length:"Game length",win:"Victory",rounds:"20 rounds",wealth:"Highest net worth",onlineTitle:"Conquer London together",onlineDesc:"Create a room, copy the invite link, and let friends join from their devices.",create:"Create room",join:"Join room",nickname:"Your nickname",roomCode:"Room code",createRoom:"Create invite room",joinRoom:"Join this game",connecting:"Connecting…",exit:"Leave room",waitingTitle:"Waiting at King’s Cross",waitingDesc:"Up to four human players; computers fill empty seats.",copy:"Copy invite link",copied:"Copied ✓",seat:"Seat",waiting:"Waiting for a friend…",host:"Host",sync:"Room syncing live",startGame:"Start game",waitHost:"Waiting for the host…",assets:"Player assets",ai:"Computer",person:"Human",total:"Net worth",property:"properties",buildings:"buildings",shares:"shares",activity:"London activity",progress:"Progress",round:"Round",market:"Stock market",location:"Current location",roll:"Roll dice",buy:"Buy property",skip:"Not now",build:"Develop property",trade:"Trade stocks",end:"End turn",waitTurn:"Waiting for {name}…",stockTitle:"London Virtual Stock Exchange",stockNote:"All eight stocks are fictional in-game assets. Prices move every round.",held:"Held",sell:"Sell",buyShare:"Buy 1 share",winner:"is London’s wealthiest player!",again:"Play again",commercial:"Commercial plot",residential:"Residential plot",baseRent:"Vacant rent",house:"House",hotel:"Hotel",shop:"Supermarket",buildHouse:"Build house",buildHotel:"Build hotel",buildShop:"Build supermarket",max:"Max level",nights:"Hotel stay: {n} nights",legend:"Property buildings",perNight:"per night",level:"level"}
+} as const;
+
+const NOTICE:Record<string,{zh:string;en:string}>={
+ welcome:{zh:"欢迎来到 London Tycoon",en:"Welcome to London Tycoon"},start:{zh:"游戏开始：每人拥有 £1,500",en:"Game started: everyone has £1,500"},turn:{zh:"轮到 {name}，请掷骰子。",en:"{name}, roll the dice."},thinking:{zh:"{name} 正在思考…",en:"{name} is thinking…"},rolled:{zh:"{name} 掷出了 {steps} 点…",en:"{name} rolled {steps}…"},passed:{zh:"{name} 经过起点，领取 £200",en:"{name} passed the start and collected £200"},buyPrompt:{zh:"{place} 尚未出售，要购买这块地产吗？",en:"{place} is available. Buy this property?"},buildPrompt:{zh:"这是你的 {place}。本次可加盖一种建筑。",en:"You own {place}. You may add one development."},bought:{zh:"{name} 以 {price} 买下 {place}",en:"{name} bought {place} for {price}"},declined:{zh:"{name} 放弃了 {place}",en:"{name} declined {place}"},built:{zh:"{name} 在 {place} 建造了 {kind}（{level}级）",en:"{name} built a level {level} {kind} at {place}"},rent:{zh:"{name} 向 {owner} 支付 {rent} 租金（{detail}）",en:"{name} paid {owner} {rent} rent ({detail})"},hotelRent:{zh:"{name} 掷出 {nights}，入住 {place} {nights} 晚并支付 {rent}",en:"{name} rolled {nights}, stayed {nights} nights at {place}, and paid {rent}"},manage:{zh:"可以交易股票，准备好后结束回合。",en:"Trade stocks if you wish, then end your turn."},bonus:{zh:"{name} 在 {place} 获得城市奖励 £100",en:"{name} received a £100 city reward at {place}"},stock:{zh:"{name} 抵达伦敦交易所。",en:"{name} reached the London Stock Exchange."},event0:{zh:"西区音乐剧大卖，票房分红 +£140",en:"A West End hit pays a £140 dividend"},event1:{zh:"地铁罢工，额外交通费 −£90",en:"A Tube strike costs £90"},event2:{zh:"泰晤士河庆典，旅游收入 +£110",en:"The Thames Festival earns £110"},event3:{zh:"突遇伦敦大雾，行程损失 −£70",en:"Heavy London fog costs £70"},eventLog:{zh:"{name}：{event}",en:"{name}: {event}"},atStart:{zh:"{name} 回到国王十字。",en:"{name} returned to King’s Cross."},stockBuy:{zh:"{name} 买入 1 股 {symbol}",en:"{name} bought 1 share of {symbol}"},newRound:{zh:"第 {round} 回合开盘：股票价格已更新",en:"Round {round} opens with updated stock prices"},finished:{zh:"伦敦钟声敲响，最终财富结算完成！",en:"The London bells ring: final wealth is calculated!"},cashLow:{zh:"现金不足。",en:"Not enough cash."},maxBuild:{zh:"这类建筑已经满级。",en:"This development is already at maximum level."}
+};
+const format=(template:string,args:Record<string,string|number>={})=>Object.entries(args).reduce((s,[k,v])=>s.replaceAll(`{${k}}`,String(v)),template);
 
 export default function Home(){
-  const [screen,setScreen] = useState<"home"|"setup"|"online"|"lobby"|"game">("home");
-  const [slots,setSlots] = useState([{name:"玩家 1",ai:false},{name:"电脑 · Baker",ai:true},{name:"电脑 · Ada",ai:true},{name:"电脑 · Sherlock",ai:true}]);
-  const [players,setPlayers] = useState<Player[]>([]);
-  const [stocks,setStocks] = useState<Stock[]>(INITIAL_STOCKS);
-  const [current,setCurrent] = useState(0);
-  const [phase,setPhase] = useState<Phase>("roll");
-  const [round,setRound] = useState(1);
-  const [dice,setDice] = useState([1,1]);
-  const [pending,setPending] = useState<number|null>(null);
-  const [message,setMessage] = useState("轮到你了。掷骰子，开始伦敦之旅！");
-  const [log,setLog] = useState<string[]>(["欢迎来到 London Tycoon"]);
-  const [showStocks,setShowStocks] = useState(false);
-  const [onlineName,setOnlineName] = useState("");
-  const [roomCodeInput,setRoomCodeInput] = useState("");
-  const [onlineAction,setOnlineAction] = useState<"create"|"join">("create");
-  const [roomAuth,setRoomAuth] = useState<RoomAuth|null>(null);
-  const [roomMembers,setRoomMembers] = useState<RoomMember[]>([]);
-  const [roomStatus,setRoomStatus] = useState<"lobby"|"active">("lobby");
-  const [onlineError,setOnlineError] = useState("");
-  const [onlineBusy,setOnlineBusy] = useState(false);
-  const [copied,setCopied] = useState(false);
-  const dirtyRef = useRef(false);
-  const remoteVersionRef = useRef(0);
+ const[lang,setLang]=useState<Lang>("zh"),t=UI[lang];
+ const[screen,setScreen]=useState<"home"|"setup"|"online"|"lobby"|"game">("home");
+ const[slots,setSlots]=useState([{name:"Player 1",ai:false},{name:"Computer · Baker",ai:true},{name:"Computer · Ada",ai:true},{name:"Computer · Sherlock",ai:true}]);
+ const[players,setPlayers]=useState<Player[]>([]),[stocks,setStocks]=useState<Stock[]>(INITIAL_STOCKS);
+ const[current,setCurrent]=useState(0),[phase,setPhase]=useState<Phase>("roll"),[round,setRound]=useState(1),[dice,setDice]=useState([1,1]);
+ const[pending,setPending]=useState<number|null>(null),[stayRoll,setStayRoll]=useState<number|null>(null);
+ const[notice,setNotice]=useState<Notice>({key:"turn",args:{name:"Player 1"}}),[log,setLog]=useState<Notice[]>([{key:"welcome"}]);
+ const[showStocks,setShowStocks]=useState(false),[onlineName,setOnlineName]=useState(""),[roomCodeInput,setRoomCodeInput]=useState("");
+ const[onlineAction,setOnlineAction]=useState<"create"|"join">("create"),[roomAuth,setRoomAuth]=useState<RoomAuth|null>(null),[roomMembers,setRoomMembers]=useState<RoomMember[]>([]);
+ const[onlineError,setOnlineError]=useState(""),[onlineBusy,setOnlineBusy]=useState(false),[copied,setCopied]=useState(false);
+ const dirtyRef=useRef(false),remoteVersionRef=useRef(0);
+ const active=players[current];
+ const owners=useMemo(()=>{const map:Record<number,number>={};players.forEach((p,pi)=>p.properties.forEach(x=>map[x]=pi));return map},[players]);
+ const say=(n:Notice)=>format(NOTICE[n.key]?.[lang]||String(n.args?.text||n.key),n.args);
+ const placeName=(i:number)=>lang==="zh"?SPACES[i].cn:SPACES[i].name;
+ const kindName=(k:BuildKind)=>t[k];
+ const netWorth=(p:Player)=>p.cash+p.properties.reduce((sum,i)=>sum+(SPACES[i].price||0)+devValue(SPACES[i],p.developments?.[i]),0)+stocks.reduce((sum,s)=>sum+(p.holdings[s.symbol]||0)*s.price,0);
+ const canAct=!roomAuth||active?.remoteId===roomAuth.playerId||(active?.ai&&roomAuth.isHost);
+ const sharedState=():SharedGame=>({players,stocks,current,phase,round,dice,pending,notice,log,stayRoll});
+ const markDirty=()=>{if(roomAuth)dirtyRef.current=true};
+ const chooseLang=(next:Lang)=>{setLang(next);localStorage.setItem("london-tycoon-lang",next)};
+ const addLog=(n:Notice)=>setLog(x=>[n,...x].slice(0,7));
+ const updatePlayer=(idx:number,fn:(p:Player)=>Player)=>setPlayers(ps=>ps.map((p,i)=>i===idx?fn({...p,developments:p.developments||{}}):p));
+ const emptyPlayer=(name:string,ai:boolean,color:string,remoteId?:string):Player=>({name,ai,color,cash:1500,pos:0,properties:[],developments:{},holdings:{},remoteId});
 
-  const active = players[current];
-  const owners = useMemo(() => {
-    const map:Record<number,number> = {};
-    players.forEach((p,pi)=>p.properties.forEach(x=>map[x]=pi));
-    return map;
-  },[players]);
-  const netWorth = (p:Player) => p.cash + p.properties.reduce((s,i)=>s+(SPACES[i].price||0),0) + stocks.reduce((s,st)=>s+(p.holdings[st.symbol]||0)*st.price,0);
-  const canAct = !roomAuth || active?.remoteId===roomAuth.playerId || (active?.ai&&roomAuth.isHost);
-  const sharedState = ():SharedGame => ({players,stocks,current,phase,round,dice,pending,message,log});
-  const markDirty = () => { if(roomAuth)dirtyRef.current=true; };
+ const startGame=()=>{setRoomAuth(null);const roster=slots.map((s,i)=>emptyPlayer(s.name.trim()||`${t.player} ${i+1}`,s.ai,COLORS[i]));setPlayers(roster);setStocks(INITIAL_STOCKS);setCurrent(0);setRound(1);setDice([1,1]);setStayRoll(null);setPhase("roll");setPending(null);setShowStocks(false);setNotice({key:roster[0].ai?"thinking":"turn",args:{name:roster[0].name}});setLog([{key:"start"}]);setScreen("game")};
+ const roomRequest=async(payload:Record<string,unknown>)=>{const r=await fetch("/api/rooms",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}),d=await r.json();if(!r.ok)throw new Error(d.error||"Room operation failed.");return d};
+ const enterRoom=async()=>{if(!onlineName.trim()){setOnlineError(lang==="zh"?"请先输入昵称。":"Enter your nickname.");return}if(onlineAction==="join"&&roomCodeInput.length!==6){setOnlineError(lang==="zh"?"请输入 6 位房间代码。":"Enter a 6-character room code.");return}setOnlineBusy(true);setOnlineError("");try{const d=await roomRequest({action:onlineAction,name:onlineName,code:roomCodeInput}),auth={code:d.room.code,playerId:d.auth.playerId,token:d.auth.token,isHost:d.auth.isHost};setRoomAuth(auth);sessionStorage.setItem("london-room-auth",JSON.stringify(auth));setRoomMembers(d.room.players);remoteVersionRef.current=d.room.updatedAt;setScreen("lobby");history.replaceState({},"",`${location.pathname}?room=${d.room.code}`)}catch(e){setOnlineError(e instanceof Error?e.message:"Unable to enter room.")}finally{setOnlineBusy(false)}};
+ const normalizePlayer=(p:Player):Player=>({...p,developments:p.developments||{}});
+ const applySharedGame=(s:SharedGame)=>{dirtyRef.current=false;setPlayers((s.players||[]).map(normalizePlayer));setStocks(s.stocks||INITIAL_STOCKS);setCurrent(s.current||0);setPhase(s.phase||"roll");setRound(s.round||1);setDice(s.dice||[1,1]);setPending(s.pending??null);setNotice(typeof s.notice==="object"?s.notice:{key:"welcome"});setLog(Array.isArray(s.log)?s.log.map(x=>typeof x==="string"?{key:"legacy",args:{text:x}}:x):[]);setStayRoll(s.stayRoll??null);setShowStocks(false);setScreen("game")};
+ const startOnlineGame=async()=>{if(!roomAuth?.isHost)return;setOnlineBusy(true);const people=[...roomMembers].sort((a,b)=>a.seat-b.seat),roster=people.map((m,i)=>emptyPlayer(m.name,false,COLORS[i],m.id));while(roster.length<4){const i=roster.length;roster.push(emptyPlayer(["Computer · Baker","Computer · Ada","Computer · Sherlock"][i-people.length]||`Computer ${i+1}`,true,COLORS[i]))}const state:SharedGame={players:roster,stocks:INITIAL_STOCKS,current:0,phase:"roll",round:1,dice:[1,1],pending:null,notice:{key:"turn",args:{name:roster[0].name}},log:[{key:"start"}],stayRoll:null};try{const d=await roomRequest({action:"start",code:roomAuth.code,token:roomAuth.token,gameState:state});remoteVersionRef.current=d.room.updatedAt;applySharedGame(state)}catch(e){setOnlineError(e instanceof Error?e.message:"Unable to start.")}finally{setOnlineBusy(false)}};
+ const inviteUrl=roomAuth?`${typeof location!=="undefined"?location.origin:""}${typeof location!=="undefined"?location.pathname:"/"}?room=${roomAuth.code}`:"";
+ const copyInvite=async()=>{if(!inviteUrl)return;let ok=false;try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(inviteUrl);ok=true}}catch{}if(!ok){const box=document.createElement("textarea");box.value=inviteUrl;box.style.position="fixed";box.style.opacity="0";document.body.appendChild(box);box.select();ok=document.execCommand("copy");box.remove()}if(ok){setCopied(true);setTimeout(()=>setCopied(false),1800)}else setOnlineError(lang==="zh"?"无法自动复制，请长按下方链接复制。":"Copy failed; select the link below manually.")};
+ const shareInvite=async()=>{if(!inviteUrl)return;if(navigator.share){try{await navigator.share({title:"London Tycoon",text:lang==="zh"?`加入我的伦敦大富翁房间 ${roomAuth?.code}`:`Join my London Tycoon room ${roomAuth?.code}`,url:inviteUrl});return}catch{}}await copyInvite()};
 
-  const addLog = (text:string) => setLog(x=>[text,...x].slice(0,6));
-  const updatePlayer = (idx:number, fn:(p:Player)=>Player) => setPlayers(ps=>ps.map((p,i)=>i===idx?fn(p):p));
+ const finishLanding=(isAI:boolean)=>{setPhase("manage");setPending(null);if(!isAI)setNotice({key:"manage"})};
+ const applyRent=(snapshot:Player[],idx:number,owner:number,rent:number,n:Notice)=>{setPlayers(snapshot.map((p,i)=>i===idx?{...p,cash:p.cash-rent}:i===owner?{...p,cash:p.cash+rent}:p));setNotice(n);addLog(n);finishLanding(snapshot[idx].ai)};
+ const resolveLanding=(idx:number,spaceIndex:number,snapshot:Player[])=>{markDirty();const p=snapshot[idx],space=SPACES[spaceIndex],owner=snapshot.findIndex((x,pi)=>pi!==idx&&x.properties.includes(spaceIndex));setStayRoll(null);
+  if(space.type==="property"){
+   if(owner>=0){const dev=snapshot[owner].developments?.[spaceIndex];if(dev?.kind==="hotel"){const nights=1+Math.floor(Math.random()*6),rent=rentFor(space,dev,nights);setStayRoll(nights);setDice([nights,0]);applyRent(snapshot,idx,owner,rent,{key:"hotelRent",args:{name:p.name,place:space.cn,nights,rent:money(rent)}})}else{const rent=rentFor(space,dev),detail=dev?`${dev.kind} L${dev.level}`:"vacant land";applyRent(snapshot,idx,owner,rent,{key:"rent",args:{name:p.name,owner:snapshot[owner].name,rent:money(rent),detail}})}return}
+   if(!p.properties.includes(spaceIndex)){if(p.ai){if(p.cash>(space.price||0)+300&&Math.random()>.22){setPlayers(snapshot.map((x,i)=>i===idx?{...x,cash:x.cash-(space.price||0),properties:[...x.properties,spaceIndex]}:x));const n={key:"bought",args:{name:p.name,price:money(space.price||0),place:space.cn}};setNotice(n);addLog(n)}else setNotice({key:"declined",args:{name:p.name,place:space.cn}});finishLanding(true)}else{setPending(spaceIndex);setPhase("buy");setNotice({key:"buyPrompt",args:{place:space.cn}})}return}
+   const dev=p.developments?.[spaceIndex];if(p.ai){let kind:BuildKind=dev?.kind||"house";if(!dev&&space.commercial){const r=Math.random();kind=r>.63?"hotel":r>.3?"shop":"house"}const cost=buildCost(space,kind,dev);if((dev?.level||0)<levelMax(kind)&&p.cash>cost+260&&Math.random()>.3){const next={kind,level:dev?.kind===kind?dev.level+1:1};setPlayers(snapshot.map((x,i)=>i===idx?{...x,cash:x.cash-cost,developments:{...(x.developments||{}),[spaceIndex]:next}}:x));const n={key:"built",args:{name:p.name,place:space.cn,kind,level:next.level}};setNotice(n);addLog(n)}finishLanding(true)}else{setPending(spaceIndex);setPhase("build");setNotice({key:"buildPrompt",args:{place:space.cn}})}return
+  }
+  if(space.type==="bonus"){setPlayers(snapshot.map((x,i)=>i===idx?{...x,cash:x.cash+100}:x));const n={key:"bonus",args:{name:p.name,place:space.cn}};setNotice(n);addLog(n)}else if(space.type==="stock"){setNotice({key:"stock",args:{name:p.name}});if(!p.ai)setShowStocks(true)}else if(space.type==="event"){const e=Math.floor(Math.random()*4),cash=[140,-90,110,-70][e],event={key:`event${e}`};setPlayers(snapshot.map((x,i)=>i===idx?{...x,cash:x.cash+cash}:x));setNotice(event);addLog({key:"eventLog",args:{name:p.name,event:NOTICE[event.key][lang]}})}else setNotice({key:"atStart",args:{name:p.name}});finishLanding(p.ai)
+ };
+ const rollDice=()=>{if(!active||phase!=="roll"||!canAct)return;markDirty();const d1=1+Math.floor(Math.random()*6),d2=1+Math.floor(Math.random()*6),steps=d1+d2;setDice([d1,d2]);setStayRoll(null);setNotice({key:"rolled",args:{name:active.name,steps}});const old=active.pos,next=(old+steps)%SPACES.length,passed=old+steps>=SPACES.length,snapshot=players.map((p,i)=>i===current?{...p,pos:next,cash:p.cash+(passed?200:0)}:p);setPlayers(snapshot);if(passed)addLog({key:"passed",args:{name:active.name}});setTimeout(()=>resolveLanding(current,next,snapshot),520)};
+ const buyProperty=()=>{if(pending===null||!active||!canAct)return;markDirty();const s=SPACES[pending];if(active.cash<(s.price||0)){setNotice({key:"cashLow"});return}updatePlayer(current,p=>({...p,cash:p.cash-(s.price||0),properties:[...p.properties,pending]}));const n={key:"bought",args:{name:active.name,price:money(s.price||0),place:s.cn}};setNotice(n);addLog(n);finishLanding(false)};
+ const developProperty=(kind:BuildKind)=>{if(pending===null||!active||!canAct)return;const s=SPACES[pending],dev=active.developments?.[pending];if(kind!=="house"&&!s.commercial)return;if(dev?.kind===kind&&dev.level>=levelMax(kind)){setNotice({key:"maxBuild"});return}const cost=buildCost(s,kind,dev);if(active.cash<cost){setNotice({key:"cashLow"});return}markDirty();const next={kind,level:dev?.kind===kind?dev.level+1:1};updatePlayer(current,p=>({...p,cash:p.cash-cost,developments:{...p.developments,[pending]:next}}));const n={key:"built",args:{name:active.name,place:s.cn,kind,level:next.level}};setNotice(n);addLog(n);finishLanding(false)};
+ const skipDecision=()=>{markDirty();finishLanding(false)};
+ const changeStock=(symbol:string,delta:number)=>{if(phase!=="manage"||!active||active.ai||!canAct)return;const st=stocks.find(s=>s.symbol===symbol)!,held=active.holdings[symbol]||0;if(delta>0&&active.cash<st.price||delta<0&&held<1)return;markDirty();updatePlayer(current,p=>({...p,cash:p.cash-delta*st.price,holdings:{...p.holdings,[symbol]:held+delta}}))};
+ const moveStocks=()=>setStocks(ss=>ss.map(s=>{const next=Math.max(12,Math.round(s.price*(1+(Math.random()-.47)*.22)));return{...s,prev:s.price,price:next}}));
+ const endTurn=()=>{if(!players.length||!canAct)return;markDirty();if(current===players.length-1){if(round>=20){setPhase("gameover");setShowStocks(false);setNotice({key:"finished"});return}setRound(r=>r+1);moveStocks();addLog({key:"newRound",args:{round:round+1}})}const next=(current+1)%players.length;setCurrent(next);setPending(null);setStayRoll(null);setShowStocks(false);setPhase("roll");setNotice({key:players[next].ai?"thinking":"turn",args:{name:players[next].name}})};
+ const aiInvest=()=>{const p=players[current];if(!p||!p.ai||phase!=="manage")return;markDirty();const affordable=stocks.filter(s=>s.price<p.cash-350).sort((a,b)=>(b.price-b.prev)-(a.price-a.prev));if(affordable.length&&Math.random()>.35){const pick=affordable[0];updatePlayer(current,x=>({...x,cash:x.cash-pick.price,holdings:{...x.holdings,[pick.symbol]:(x.holdings[pick.symbol]||0)+1}}));addLog({key:"stockBuy",args:{name:p.name,symbol:pick.symbol}})}setTimeout(endTurn,520)};
 
-  const startGame = () => {
-    setRoomAuth(null);
-    setPlayers(slots.map((s,i)=>({name:s.name.trim()||`玩家 ${i+1}`,ai:s.ai,color:COLORS[i],cash:1500,pos:0,properties:[],holdings:{}})));
-    setStocks(INITIAL_STOCKS); setCurrent(0); setRound(1); setDice([1,1]); setPhase("roll"); setPending(null); setShowStocks(false);
-    setMessage(slots[0].ai?"电脑正在思考…":"轮到你了。掷骰子，开始伦敦之旅！"); setLog(["游戏开始：每人拥有 £1,500"]); setScreen("game");
-  };
+ useEffect(()=>{const saved=localStorage.getItem("london-tycoon-lang");if(saved==="en"||saved==="zh")setLang(saved);const code=new URLSearchParams(location.search).get("room")?.toUpperCase()||"";if(code.length===6){setRoomCodeInput(code);try{const auth=JSON.parse(sessionStorage.getItem("london-room-auth")||"null") as RoomAuth|null;if(auth?.code===code){setRoomAuth(auth);setScreen("lobby");return}}catch{}setOnlineAction("join");setScreen("online")}},[]);
+ useEffect(()=>{if(!roomAuth||(screen!=="lobby"&&screen!=="game"))return;let cancel=false;const refresh=async()=>{try{const r=await fetch(`/api/rooms?code=${roomAuth.code}`,{cache:"no-store"}),d=await r.json();if(!r.ok)throw new Error(d.error);if(cancel)return;setRoomMembers(d.room.players);if(d.room.updatedAt>remoteVersionRef.current&&!dirtyRef.current){remoteVersionRef.current=d.room.updatedAt;if(d.room.status==="active"&&d.room.gameState)applySharedGame(d.room.gameState)}}catch(e){if(!cancel)setOnlineError(e instanceof Error?e.message:"Connection lost.")}};refresh();const timer=setInterval(refresh,1200);return()=>{cancel=true;clearInterval(timer)}},[roomAuth?.code,screen]);
+ useEffect(()=>{if(!roomAuth||screen!=="game"||!dirtyRef.current)return;const state=sharedState(),timer=setTimeout(async()=>{try{const d=await roomRequest({action:"sync",code:roomAuth.code,token:roomAuth.token,gameState:state});remoteVersionRef.current=Math.max(remoteVersionRef.current,d.updatedAt||0);dirtyRef.current=false}catch{setOnlineError(lang==="zh"?"同步中断，正在重试。":"Sync interrupted; retrying.")}},180);return()=>clearTimeout(timer)},[players,stocks,current,phase,round,dice,pending,notice,log,stayRoll,screen,roomAuth?.code]);
+ useEffect(()=>{if(screen!=="game"||!active?.ai||roomAuth&&!roomAuth.isHost)return;const timer=setTimeout(()=>{if(phase==="roll")rollDice();else if(phase==="manage")aiInvest()},650);return()=>clearTimeout(timer)},[screen,current,phase,active?.ai,roomAuth?.isHost]);
+ const ranking=[...players].sort((a,b)=>netWorth(b)-netWorth(a));
 
-  const roomRequest = async (payload:Record<string,unknown>) => {
-    const response=await fetch("/api/rooms",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    const data=await response.json(); if(!response.ok)throw new Error(data.error||"房间操作失败。"); return data;
-  };
+ const Header=({back}:{back?:()=>void})=><header className="topbar"><Logo lang={lang}/><LanguageSwitch lang={lang} onChange={chooseLang}/>{back&&<button className="text-btn" onClick={back}>← {t.back}</button>}</header>;
+ if(screen==="home")return <main className="landing"><header className="topbar"><Logo lang={lang}/><LanguageSwitch lang={lang} onChange={chooseLang}/><span className="tag">{lang==="zh"?"4 位玩家 · 地产 · 建筑 · 股票":"4 PLAYERS · PROPERTY · BUILDINGS · STOCKS"}</span></header><section className="hero"><div className="hero-copy"><p className="eyebrow">WELCOME TO THE CAPITAL</p><h1>{lang==="zh"?<>从泰晤士河畔，<br/>建立你的伦敦帝国。</>:<>Build your London empire,<br/>from the Thames outward.</>}</h1><p>{lang==="zh"?"购买地产、建设住宅、酒店和超市，再用股票扩大财富。":"Buy property, build houses, hotels and supermarkets, then grow your fortune through stocks."}</p><div className="home-actions"><button className="primary" onClick={()=>setScreen("online")}>{t.online} <span>→</span></button><button className="secondary" onClick={()=>setScreen("setup")}>{t.local}</button></div><div className="facts"><span><b>20</b>{lang==="zh"?" 城市站点":" locations"}</span><span><b>3</b>{lang==="zh"?" 建筑类型":" building types"}</span><span><b>8</b>{lang==="zh"?" 虚构股票":" fictional stocks"}</span></div></div><MapMini lang={lang}/></section><footer className="landing-footer"><span>BIG BEN</span><span>THE SHARD</span><span>TOWER BRIDGE</span><span>BUCKINGHAM PALACE</span></footer></main>;
+ if(screen==="setup")return <main className="setup-page"><Header back={()=>setScreen("home")}/><section className="setup-card"><div><div><p className="eyebrow">NEW GAME</p><h1>{t.setupTitle}</h1></div><p>{t.setupDesc}</p></div><div className="slots">{slots.map((s,i)=><div className="slot" key={i} style={{"--player":COLORS[i]} as React.CSSProperties}><span className="pawn">{s.ai?"◆":"●"}</span><div className="slot-main"><label>{t.player} {i+1}</label><input value={s.name} onChange={e=>setSlots(x=>x.map((v,j)=>j===i?{...v,name:e.target.value}:v))}/></div><div className="toggle"><button className={!s.ai?"on":""} onClick={()=>setSlots(x=>x.map((v,j)=>j===i?{...v,ai:false}:v))}>{t.human}</button><button className={s.ai?"on":""} onClick={()=>setSlots(x=>x.map((v,j)=>j===i?{...v,ai:true}:v))}>{t.computer}</button></div></div>)}</div><div className="rules"><span>{t.startCash} <b>£1,500</b></span><span>{t.length} <b>{t.rounds}</b></span><span>{t.win} <b>{t.wealth}</b></span></div><button className="primary wide" onClick={startGame}>{t.start} <span>→</span></button></section></main>;
+ if(screen==="online")return <main className="setup-page"><Header back={()=>{setScreen("home");history.replaceState({},"",location.pathname)}}/><section className="setup-card online-card"><p className="eyebrow">PLAY TOGETHER</p><h1>{t.onlineTitle}</h1><p>{t.onlineDesc}</p><div className="online-tabs"><button className={onlineAction==="create"?"on":""} onClick={()=>setOnlineAction("create")}>{t.create}</button><button className={onlineAction==="join"?"on":""} onClick={()=>setOnlineAction("join")}>{t.join}</button></div><div className="online-form"><label>{t.nickname}<input value={onlineName} maxLength={24} onChange={e=>setOnlineName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&enterRoom()}/></label>{onlineAction==="join"&&<label>{t.roomCode}<input className="code-input" value={roomCodeInput} maxLength={6} onChange={e=>setRoomCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""))} onKeyDown={e=>e.key==="Enter"&&enterRoom()}/></label>}</div>{onlineError&&<p className="form-error">{onlineError}</p>}<button className="primary wide" disabled={onlineBusy} onClick={enterRoom}>{onlineBusy?t.connecting:onlineAction==="create"?t.createRoom:t.joinRoom} <span>→</span></button></section></main>;
+ if(screen==="lobby"&&roomAuth)return <main className="setup-page"><Header back={()=>{sessionStorage.removeItem("london-room-auth");setRoomAuth(null);setScreen("home");history.replaceState({},"",location.pathname)}}/><section className="setup-card lobby-card"><div className="lobby-heading"><div><p className="eyebrow">WAITING AT KING’S CROSS</p><h1>{t.waitingTitle}</h1><p>{t.waitingDesc}</p></div><div className="room-code"><small>{t.roomCode}</small><b>{roomAuth.code}</b><div className="invite-actions"><button onClick={copyInvite}>{copied?t.copied:t.copy}</button><button onClick={shareInvite}>{lang==="zh"?"分享…":"Share…"}</button></div></div></div><label className="invite-link"><span>{lang==="zh"?"朋友打开这个完整链接即可加入":"Friends can join with this full link"}</span><input readOnly value={inviteUrl} onFocus={e=>e.currentTarget.select()}/></label><div className="lobby-seats">{[0,1,2,3].map(seat=>{const m=roomMembers.find(x=>x.seat===seat);return <div className={`lobby-seat ${m?"joined":""}`} key={seat} style={{"--player":COLORS[seat]} as React.CSSProperties}><span>{m?"●":"＋"}</span><div><small>{t.seat} {seat+1}</small><b>{m?.name||t.waiting}</b>{m?.isHost&&<em>{t.host}</em>}</div></div>})}</div>{onlineError&&<p className="form-error">{onlineError}</p>}<div className="lobby-footer"><span><i className="live-dot"/> {t.sync}</span>{roomAuth.isHost?<button className="primary" disabled={onlineBusy} onClick={startOnlineGame}>{t.startGame} <span>→</span></button>:<b>{t.waitHost}</b>}</div></section></main>;
 
-  const enterRoom = async () => {
-    if(!onlineName.trim()){setOnlineError("请先输入你的昵称。");return}
-    if(onlineAction==="join"&&roomCodeInput.trim().length!==6){setOnlineError("请输入 6 位房间代码。");return}
-    setOnlineBusy(true);setOnlineError("");
-    try{
-      const data=await roomRequest({action:onlineAction,name:onlineName,code:roomCodeInput});
-      const auth:RoomAuth={code:data.room.code,playerId:data.auth.playerId,token:data.auth.token,isHost:data.auth.isHost};
-      setRoomAuth(auth);setRoomMembers(data.room.players);setRoomStatus(data.room.status);remoteVersionRef.current=data.room.updatedAt;setScreen("lobby");
-      window.history.replaceState({},"",`?room=${data.room.code}`);
-    }catch(error){setOnlineError(error instanceof Error?error.message:"无法进入房间。")}
-    finally{setOnlineBusy(false)}
-  };
-
-  const applySharedGame = (state:SharedGame) => {
-    dirtyRef.current=false;setPlayers(state.players);setStocks(state.stocks);setCurrent(state.current);setPhase(state.phase);setRound(state.round);setDice(state.dice);setPending(state.pending);setMessage(state.message);setLog(state.log);setShowStocks(false);setScreen("game");
-  };
-
-  const startOnlineGame = async () => {
-    if(!roomAuth?.isHost)return;setOnlineBusy(true);setOnlineError("");
-    const people=[...roomMembers].sort((a,b)=>a.seat-b.seat);
-    const roster:Player[]=people.map((m,i)=>({name:m.name,ai:false,remoteId:m.id,color:COLORS[i],cash:1500,pos:0,properties:[],holdings:{}}));
-    while(roster.length<4){const i=roster.length;roster.push({name:["电脑 · Baker","电脑 · Ada","电脑 · Sherlock"][i-people.length]||`电脑 ${i+1}`,ai:true,color:COLORS[i],cash:1500,pos:0,properties:[],holdings:{}})}
-    const state:SharedGame={players:roster,stocks:INITIAL_STOCKS,current:0,phase:"roll",round:1,dice:[1,1],pending:null,message:`轮到 ${roster[0].name}。请掷骰子。`,log:["在线游戏开始：每人拥有 £1,500"]};
-    try{const data=await roomRequest({action:"start",code:roomAuth.code,token:roomAuth.token,gameState:state});remoteVersionRef.current=data.room.updatedAt;applySharedGame(state)}catch(error){setOnlineError(error instanceof Error?error.message:"无法开始游戏。")}
-    finally{setOnlineBusy(false)}
-  };
-
-  const copyInvite = async () => {
-    if(!roomAuth)return;const url=`${window.location.origin}${window.location.pathname}?room=${roomAuth.code}`;
-    try{await navigator.clipboard.writeText(url);setCopied(true);window.setTimeout(()=>setCopied(false),1800)}catch{setOnlineError("复制失败，请手动复制浏览器地址。")}
-  };
-
-  const finishLanding = (isAI:boolean) => {
-    setPhase("manage");
-    if(!isAI) setMessage("你可以交易股票，准备好后结束回合。");
-  };
-
-  const resolveLanding = (idx:number, spaceIndex:number, snapshot:Player[]) => {
-    markDirty();
-    const p = snapshot[idx]; const space=SPACES[spaceIndex]; const owner = snapshot.findIndex((x,pi)=>pi!==idx&&x.properties.includes(spaceIndex));
-    if(space.type==="property"){
-      if(owner>=0){
-        const rent=space.rent||0;
-        setPlayers(snapshot.map((x,pi)=>pi===idx?{...x,cash:x.cash-rent}:pi===owner?{...x,cash:x.cash+rent}:x));
-        setMessage(`${p.name} 向 ${snapshot[owner].name} 支付 ${money(rent)} 租金。`); addLog(`${p.name} 在 ${space.cn} 支付了 ${money(rent)}`); finishLanding(p.ai); return;
-      }
-      if(!p.properties.includes(spaceIndex)){
-        if(p.ai){
-          if(p.cash>(space.price||0)+320 && Math.random()>.25){
-            setPlayers(snapshot.map((x,pi)=>pi===idx?{...x,cash:x.cash-(space.price||0),properties:[...x.properties,spaceIndex]}:x));
-            setMessage(`${p.name} 收购了 ${space.cn}。`); addLog(`${p.name} 以 ${money(space.price||0)} 收购 ${space.cn}`);
-          } else { setMessage(`${p.name} 放弃了 ${space.cn}。`); }
-          finishLanding(true);
-        } else { setPending(spaceIndex); setPhase("decision"); setMessage(`${space.cn} 尚未被收购。要买下它吗？`); }
-        return;
-      }
-    }
-    if(space.type==="tax"){
-      setPlayers(snapshot.map((x,pi)=>pi===idx?{...x,cash:x.cash-120}:x)); setMessage(`${p.name} 缴纳了 £120 城市税。`); addLog(`${p.name} 缴纳城市税 £120`);
-    } else if(space.type==="bonus"){
-      setPlayers(snapshot.map((x,pi)=>pi===idx?{...x,cash:x.cash+100}:x)); setMessage(`${p.name} 获得城市奖励 £100。`); addLog(`${p.name} 在 ${space.cn} 获得 £100`);
-    } else if(space.type==="stock"){
-      setMessage(`${p.name} 抵达交易区，本回合股票免手续费。`); if(!p.ai)setShowStocks(true);
-    } else if(space.type==="event"){
-      const events=[{text:"西区音乐剧大卖，票房分红 +£140",cash:140},{text:"地铁罢工，额外交通费 −£90",cash:-90},{text:"泰晤士河庆典，旅游收入 +£110",cash:110},{text:"突遇伦敦大雾，行程损失 −£70",cash:-70}];
-      const ev=events[Math.floor(Math.random()*events.length)]; setPlayers(snapshot.map((x,pi)=>pi===idx?{...x,cash:x.cash+ev.cash}:x)); setMessage(ev.text); addLog(`${p.name}：${ev.text}`);
-    } else if(space.type==="start"){ setMessage(`${p.name} 回到国王十字，整装再出发。`); }
-    finishLanding(p.ai);
-  };
-
-  const rollDice = () => {
-    if(!active||phase!=="roll"||!canAct)return;markDirty();
-    const d1=1+Math.floor(Math.random()*6),d2=1+Math.floor(Math.random()*6),steps=d1+d2;
-    setDice([d1,d2]); setMessage(`${active.name} 掷出了 ${steps} 点…`);
-    const old=active.pos, next=(old+steps)%SPACES.length, passed=old+steps>=SPACES.length;
-    const snapshot=players.map((p,i)=>i===current?{...p,pos:next,cash:p.cash+(passed?200:0)}:p);
-    setPlayers(snapshot); if(passed)addLog(`${active.name} 经过起点，领取 £200`);
-    window.setTimeout(()=>resolveLanding(current,next,snapshot),520);
-  };
-
-  const buyProperty = () => {
-    if(pending===null||!canAct)return; markDirty();const s=SPACES[pending];
-    if(active.cash<(s.price||0)){setMessage("现金不足，无法购买这处地标。");return;}
-    updatePlayer(current,p=>({...p,cash:p.cash-(s.price||0),properties:[...p.properties,pending]})); addLog(`${active.name} 以 ${money(s.price||0)} 收购 ${s.cn}`); setMessage(`你已拥有 ${s.cn}。`); setPending(null); setPhase("manage");
-  };
-
-  const changeStock = (symbol:string,delta:number) => {
-    if(phase!=="manage"||active.ai||!canAct)return;markDirty(); const st=stocks.find(s=>s.symbol===symbol)!; const held=active.holdings[symbol]||0;
-    if(delta>0&&active.cash<st.price)return; if(delta<0&&held<1)return;
-    updatePlayer(current,p=>({...p,cash:p.cash-delta*st.price,holdings:{...p.holdings,[symbol]:held+delta}}));
-  };
-
-  const moveStocks = () => setStocks(ss=>ss.map(s=>{const swing=(Math.random()-.47)*.22;const next=Math.max(12,Math.round(s.price*(1+swing)));return {...s,prev:s.price,price:next}}));
-
-  const endTurn = () => {
-    if(!players.length||!canAct)return;markDirty();
-    if(current===players.length-1){
-      if(round>=20){setPhase("gameover");setShowStocks(false);setMessage("伦敦钟声敲响，最终财富结算完成！");return;}
-      setRound(r=>r+1); moveStocks(); addLog(`第 ${round+1} 回合开盘：8 支股票价格已更新`);
-    }
-    const next=(current+1)%players.length; setCurrent(next); setPending(null); setShowStocks(false); setPhase("roll"); setMessage(players[next].ai?`${players[next].name} 正在思考…`:`轮到 ${players[next].name}。请掷骰子。`);
-  };
-
-  const aiInvest = () => {
-    const p=players[current]; if(!p||!p.ai||phase!=="manage")return;markDirty();
-    const affordable=stocks.filter(s=>s.price<p.cash-350).sort((a,b)=>(b.price-b.prev)-(a.price-a.prev));
-    if(affordable.length&&Math.random()>.35){const pick=affordable[0];updatePlayer(current,x=>({...x,cash:x.cash-pick.price,holdings:{...x.holdings,[pick.symbol]:(x.holdings[pick.symbol]||0)+1}}));addLog(`${p.name} 买入 1 股 ${pick.symbol}`);}
-    window.setTimeout(endTurn,520);
-  };
-
-  useEffect(()=>{
-    const code=new URLSearchParams(window.location.search).get("room")?.toUpperCase()||"";
-    if(code.length===6){setRoomCodeInput(code);setOnlineAction("join");setScreen("online")}
-  },[]);
-
-  useEffect(()=>{
-    if(!roomAuth||(screen!=="lobby"&&screen!=="game"))return;
-    let cancelled=false;
-    const refresh=async()=>{
-      try{
-        const response=await fetch(`/api/rooms?code=${roomAuth.code}`,{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.error);
-        if(cancelled)return;setRoomMembers(data.room.players);setRoomStatus(data.room.status);
-        if(data.room.updatedAt>remoteVersionRef.current&&!dirtyRef.current){remoteVersionRef.current=data.room.updatedAt;if(data.room.status==="active"&&data.room.gameState)applySharedGame(data.room.gameState)}
-      }catch(error){if(!cancelled)setOnlineError(error instanceof Error?error.message:"连接房间失败。")}
-    };
-    refresh();const timer=window.setInterval(refresh,1200);return()=>{cancelled=true;window.clearInterval(timer)};
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[roomAuth?.code,screen]);
-
-  useEffect(()=>{
-    if(!roomAuth||screen!=="game"||!dirtyRef.current)return;
-    const state=sharedState();
-    const timer=window.setTimeout(async()=>{
-      try{const data=await roomRequest({action:"sync",code:roomAuth.code,token:roomAuth.token,gameState:state});remoteVersionRef.current=Math.max(remoteVersionRef.current,data.updatedAt||0);dirtyRef.current=false}catch(error){setOnlineError(error instanceof Error?error.message:"同步暂时中断，正在重试。")}
-    },180);
-    return()=>window.clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[players,stocks,current,phase,round,dice,pending,message,log,screen,roomAuth?.code]);
-
-  useEffect(()=>{
-    if(screen!=="game"||!active?.ai)return;
-    if(roomAuth&&!roomAuth.isHost)return;
-    const t=window.setTimeout(()=>{if(phase==="roll")rollDice();else if(phase==="manage")aiInvest();},650);
-    return()=>window.clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[screen,current,phase,active?.ai,roomAuth?.isHost]);
-
-  const ranking=[...players].sort((a,b)=>netWorth(b)-netWorth(a));
-
-  if(screen==="home")return <main className="landing">
-    <header className="topbar"><Logo/><span className="tag">4 位玩家 · 地产 · 股票</span></header>
-    <section className="hero"><div className="hero-copy"><p className="eyebrow">WELCOME TO THE CAPITAL</p><h1>从泰晤士河畔，<br/>建立你的伦敦帝国。</h1><p>沿真实伦敦方位探索城市地标、交易 8 支虚构股票，与好友和聪明的电脑对手角逐伦敦首富。</p><div className="home-actions"><button className="primary" onClick={()=>setScreen("online")}>在线与朋友玩 <span>→</span></button><button className="secondary" onClick={()=>setScreen("setup")}>同一台电脑玩</button></div><div className="facts"><span><b>20</b> 城市站点</span><span><b>8</b> 虚构股票</span><span><b>4</b> 玩家席位</span></div></div><MapMini/></section>
-    <footer className="landing-footer"><span>BIG BEN</span><span>THE SHARD</span><span>TOWER BRIDGE</span><span>BUCKINGHAM PALACE</span></footer>
-  </main>;
-
-  if(screen==="setup")return <main className="setup-page"><header className="topbar"><Logo/><button className="text-btn" onClick={()=>setScreen("home")}>← 返回</button></header><section className="setup-card"><div><p className="eyebrow">NEW GAME</p><h1>谁来征服伦敦？</h1><p>一局固定 4 个席位。你可以自由选择真人或电脑玩家，并为每位玩家改名。</p></div><div className="slots">{slots.map((s,i)=><div className="slot" key={i} style={{"--player":COLORS[i]} as React.CSSProperties}><span className="pawn">{s.ai?"◆":"●"}</span><div className="slot-main"><label>玩家 {i+1}</label><input aria-label={`玩家 ${i+1} 名称`} value={s.name} onChange={e=>setSlots(x=>x.map((v,j)=>j===i?{...v,name:e.target.value}:v))}/></div><div className="toggle"><button className={!s.ai?"on":""} onClick={()=>setSlots(x=>x.map((v,j)=>j===i?{...v,ai:false}:v))}>真人</button><button className={s.ai?"on":""} onClick={()=>setSlots(x=>x.map((v,j)=>j===i?{...v,ai:true}:v))}>电脑</button></div></div>)}</div><div className="rules"><span>起始资金 <b>£1,500</b></span><span>游戏长度 <b>20 回合</b></span><span>胜利条件 <b>最高总资产</b></span></div><button className="primary wide" onClick={startGame}>进入伦敦 <span>→</span></button></section></main>;
-
-  if(screen==="online")return <main className="setup-page online-page"><header className="topbar"><Logo/><button className="text-btn" onClick={()=>{setScreen("home");window.history.replaceState({},"",window.location.pathname)}}>← 返回</button></header><section className="setup-card online-card"><p className="eyebrow">PLAY TOGETHER</p><h1>和朋友一起征服伦敦</h1><p>创建房间后复制邀请链接；朋友打开链接、输入昵称，就能从自己的电脑加入。</p><div className="online-tabs"><button className={onlineAction==="create"?"on":""} onClick={()=>setOnlineAction("create")}>创建房间</button><button className={onlineAction==="join"?"on":""} onClick={()=>setOnlineAction("join")}>加入房间</button></div><div className="online-form"><label>你的昵称<input value={onlineName} maxLength={24} placeholder="例如：小明" onChange={e=>setOnlineName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&enterRoom()}/></label>{onlineAction==="join"&&<label>房间代码<input className="code-input" value={roomCodeInput} maxLength={6} placeholder="6 位代码" onChange={e=>setRoomCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""))} onKeyDown={e=>e.key==="Enter"&&enterRoom()}/></label>}</div>{onlineError&&<p className="form-error">{onlineError}</p>}<button className="primary wide" disabled={onlineBusy} onClick={enterRoom}>{onlineBusy?"正在连接…":onlineAction==="create"?"创建邀请房间":"加入这局游戏"} <span>→</span></button></section></main>;
-
-  if(screen==="lobby"&&roomAuth)return <main className="setup-page lobby-page"><header className="topbar"><Logo/><button className="text-btn" onClick={()=>{setRoomAuth(null);setScreen("home");window.history.replaceState({},"",window.location.pathname)}}>退出房间</button></header><section className="setup-card lobby-card"><div className="lobby-heading"><div><p className="eyebrow">WAITING AT KING’S CROSS</p><h1>等待玩家上车</h1><p>把邀请链接发给朋友。最多 4 位真人参加；空余席位会由电脑补上。</p></div><div className="room-code"><small>房间代码</small><b>{roomAuth.code}</b><button onClick={copyInvite}>{copied?"已复制邀请链接 ✓":"复制邀请链接"}</button></div></div><div className="lobby-seats">{[0,1,2,3].map(seat=>{const member=roomMembers.find(m=>m.seat===seat);return <div className={`lobby-seat ${member?"joined":""}`} key={seat} style={{"--player":COLORS[seat]} as React.CSSProperties}><span>{member?"●":"＋"}</span><div><small>席位 {seat+1}</small><b>{member?.name||"等待朋友加入…"}</b>{member?.isHost&&<em>房主</em>}</div></div>})}</div>{onlineError&&<p className="form-error">{onlineError}</p>}<div className="lobby-footer"><span><i className="live-dot"/> 房间实时同步中</span>{roomAuth.isHost?<button className="primary" disabled={onlineBusy} onClick={startOnlineGame}>{onlineBusy?"正在准备…":"开始游戏"} <span>→</span></button>:<b>等待房主开始游戏…</b>}</div></section></main>;
-
-  return <main className="game-page">
-    <header className="game-head"><Logo/>{roomAuth&&<span className="online-badge"><i/> 房间 {roomAuth.code}</span>}<div className="round"><small>当前进度</small><b>第 {round} / 20 回合</b></div><button className="market-btn" onClick={()=>setShowStocks(!showStocks)}>股票市场 <span>↗</span></button></header>
-    <section className="game-layout">
-      <aside className="players-panel"><p className="panel-title">玩家资产</p>{players.map((p,i)=><article className={`player-card ${i===current?"active":""}`} key={i} style={{"--player":p.color} as React.CSSProperties}><div className="avatar">{p.ai?"◆":"●"}</div><div className="player-info"><b>{p.name}</b><small>{p.ai?"电脑玩家":"真人玩家"} · 总资产 {money(netWorth(p))}</small></div><strong>{money(p.cash)}</strong><div className="mini-assets"><span>{p.properties.length} 处地产</span><span>{Object.values(p.holdings).reduce((a,b)=>a+b,0)} 股</span></div></article>)}<div className="activity"><p className="panel-title">伦敦动态</p>{log.map((x,i)=><p key={i}>{x}</p>)}</div></aside>
-      <section className="map-wrap"><div className="london-map">
-        <div className="map-title"><small>GREATER LONDON · 城市财富地图</small><b>LONDON</b></div>
-        <div className="park park-one">HYDE PARK</div><div className="park park-two">GREENWICH PARK</div>
-        {[...Array(15)].map((_,i)=><i className={`street street-${i}`} key={`street-${i}`}/>) }
-        {RIVER_POINTS.slice(0,-1).map((p,i)=><i className="thames-segment" style={lineStyle(p,RIVER_POINTS[i+1])} key={`river-${i}`}/>) }
-        <span className="thames-label">RIVER THAMES · 泰晤士河</span>
-        {MAP_POINTS.slice(0,-1).map((p,i)=><i className="route-segment" style={lineStyle(p,MAP_POINTS[i+1])} key={`route-${i}`}/>) }
-        <i className="route-segment" style={lineStyle(MAP_POINTS[MAP_POINTS.length-1],MAP_POINTS[0])}/>
-        {SPACES.map((s,i)=><button className={`map-stop ${s.type} ${players.some(p=>p.pos===i)?"occupied":""}`} style={{left:`${MAP_POINTS[i][0]}%`,top:`${MAP_POINTS[i][1]}%`,"--stripe":s.color||"#18334e","--icon-col":i%5,"--icon-row":Math.floor(i/5)} as React.CSSProperties} key={s.name} aria-label={`${s.cn} ${s.name}`}><span className="landmark-art"/><span className="stop-copy"><b>{s.cn}</b><small>{s.type==="property"?`${s.name} · ${money(s.price||0)}`:s.name}</small></span>{owners[i]!==undefined&&<i className="owner-pin" style={{background:players[owners[i]].color}}/>}</button>)}
-        {players.map((p,pi)=><span className="moving-pawn" key={pi} style={{left:`${MAP_POINTS[p.pos][0]}%`,top:`${MAP_POINTS[p.pos][1]}%`,background:p.color,zIndex:12+pi}}>{pi+1}</span>)}
-        <div className="map-console"><div><small>当前位置</small><b>{active?SPACES[active.pos].cn:"伦敦"}</b><p>{message}</p></div><div className="dice-row"><span className="die">{dice[0]}</span><span className="die">{dice[1]}</span></div>{phase==="roll"&&!active?.ai&&canAct&&<button className="roll-btn" onClick={rollDice}>掷骰子</button>}{phase==="decision"&&pending!==null&&canAct&&<div className="decision"><button onClick={buyProperty}>以 {money(SPACES[pending].price||0)} 收购</button><button onClick={()=>{markDirty();setPending(null);setPhase("manage");setMessage("你放弃了这处地标，可以交易股票或结束回合。");}}>暂不购买</button></div>}{phase==="manage"&&!active?.ai&&canAct&&<div className="manage"><button onClick={()=>setShowStocks(true)}>交易股票</button><button className="end" onClick={endTurn}>结束回合 →</button></div>}{roomAuth&&!canAct&&<span className="waiting-turn">等待 {active?.name} 操作…</span>}</div>
-      </div></section>
-    </section>
-    {showStocks&&phase!=="gameover"&&<div className="drawer"><div className="drawer-head"><div><p className="eyebrow">THE CITY EXCHANGE</p><h2>伦敦虚拟股票市场</h2></div><button onClick={()=>setShowStocks(false)}>×</button></div><p className="disclaimer">以下 8 支股票均为游戏内虚构资产。价格每回合随机波动，仅用于娱乐。</p><div className="stock-grid">{stocks.map(st=>{const up=st.price>=st.prev,held=active?.holdings[st.symbol]||0;return <article className="stock" key={st.symbol} style={{"--stock":st.color} as React.CSSProperties}><div><span className="ticker">{st.symbol}</span><b>{st.name}</b></div><strong>{money(st.price)}</strong><small className={up?"up":"down"}>{up?"▲":"▼"} {Math.abs(st.price-st.prev)} · 持有 {held} 股</small><div className="trade"><button disabled={phase!=="manage"||active?.ai||!canAct||held<1} onClick={()=>changeStock(st.symbol,-1)}>卖出</button><button disabled={phase!=="manage"||active?.ai||!canAct||(active?.cash||0)<st.price} onClick={()=>changeStock(st.symbol,1)}>买入 1 股</button></div></article>})}</div></div>}
-    {phase==="gameover"&&<div className="overlay"><section className="result"><span className="crown">♛</span><p className="eyebrow">FINAL BELL</p><h1>{ranking[0]?.name}<br/>成为伦敦首富！</h1><div className="podium">{ranking.map((p,i)=><div key={p.name}><span>{i+1}</span><b>{p.name}</b><strong>{money(netWorth(p))}</strong></div>)}</div><button className="primary" onClick={()=>setScreen("setup")}>再玩一局 <span>→</span></button></section></div>}
-  </main>;
+ return <main className="game-page"><header className="game-head"><Logo lang={lang}/>{roomAuth&&<span className="online-badge"><i/> {t.roomCode} {roomAuth.code}</span>}<div className="round"><small>{t.progress}</small><b>{t.round} {round} / 20</b></div><LanguageSwitch lang={lang} onChange={chooseLang}/><button className="market-btn" onClick={()=>setShowStocks(!showStocks)}>{t.market} <span>↗</span></button></header><section className="game-layout">
+  <aside className="players-panel"><p className="panel-title">{t.assets}</p>{players.map((p,i)=>{const buildingCount=Object.values(p.developments||{}).reduce((s,d)=>s+d.level,0);return <article className={`player-card ${i===current?"active":""}`} key={i} style={{"--player":p.color} as React.CSSProperties}><div className="avatar">{p.ai?"◆":"●"}</div><div className="player-info"><b>{p.name}</b><small>{p.ai?t.ai:t.person} · {t.total} {money(netWorth(p))}</small></div><strong>{money(p.cash)}</strong><div className="mini-assets"><span>{p.properties.length} {t.property}</span><span>{buildingCount} {t.buildings}</span><span>{Object.values(p.holdings).reduce((a,b)=>a+b,0)} {t.shares}</span></div></article>})}<div className="activity"><p className="panel-title">{t.activity}</p>{log.map((n,i)=><p key={i}>{say(n)}</p>)}</div></aside>
+  <section className="map-wrap"><div className="london-map"><div className="map-title"><small>GREATER LONDON · {lang==="zh"?"城市财富地图":"CITY WEALTH MAP"}</small><b>LONDON</b></div><div className="park park-one">HYDE PARK</div><div className="park park-two">GREENWICH PARK</div><span className="district district-west">WEST LONDON</span><span className="district district-city">CITY OF LONDON</span><span className="district district-east">EAST LONDON</span>{[...Array(15)].map((_,i)=><i className={`street street-${i}`} key={i}/>)}{RIVER_POINTS.slice(0,-1).map((p,i)=><i className="thames-segment" style={lineStyle(p,RIVER_POINTS[i+1])} key={i}/>)}<span className="thames-label">RIVER THAMES · 泰晤士河</span>{MAP_POINTS.slice(0,-1).map((p,i)=><i className="route-segment" style={lineStyle(p,MAP_POINTS[i+1])} key={i}/>)}<i className="route-segment" style={lineStyle(MAP_POINTS.at(-1)!,MAP_POINTS[0])}/>
+   {SPACES.map((s,i)=>{const owner=owners[i],dev=owner!==undefined?players[owner].developments?.[i]:undefined;return <button className={`map-stop ${s.type} label-${LABEL_POS[i]} ${players.some(p=>p.pos===i)?"occupied":""}`} style={{left:`${MAP_POINTS[i][0]}%`,top:`${MAP_POINTS[i][1]}%`,"--stripe":s.color||"#18334e","--icon-col":i%5,"--icon-row":Math.floor(i/5),"--dev-x":`${DEV_POS[i][0]}px`,"--dev-y":`${DEV_POS[i][1]}px`} as React.CSSProperties} key={s.name}><span className="landmark-art"/><span className="stop-copy"><b>{placeName(i)}</b><small>{s.type==="property"?owner===undefined?`${money(s.price||0)} · ${s.commercial?t.commercial:t.residential}`:`${t.baseRent} ${money(rentFor(s))}`:s.name}</small></span>{owner!==undefined&&<i className="owner-pin" style={{background:players[owner].color}}/>}{dev&&<span className={`development-badge ${dev.kind}`}><i>{dev.kind==="house"?"⌂":dev.kind==="hotel"?"H":"S"}</i><b>{dev.level}</b></span>}</button>})}
+   {players.map((p,i)=><span className="moving-pawn" key={i} style={{left:`${MAP_POINTS[p.pos][0]}%`,top:`${MAP_POINTS[p.pos][1]}%`,background:p.color,zIndex:20+i}}>{i+1}</span>)}
+   <div className="map-legend"><b>{t.legend}</b><span><i className="legend-house">⌂</i>{t.house}</span><span><i className="legend-hotel">H</i>{t.hotel}</span><span><i className="legend-shop">S</i>{t.shop}</span></div>
+   <div className="map-console"><div className="console-copy"><small>{t.location}</small><b>{active?placeName(active.pos):"London"}</b><p>{say(notice)}</p></div><div className="dice-row">{stayRoll?<><span className="stay-caption">{format(t.nights,{n:stayRoll})}</span><span className="die hotel-die">{stayRoll}</span></>:<><span className="die">{dice[0]}</span><span className="die">{dice[1]}</span></>}</div>{phase==="roll"&&!active?.ai&&canAct&&<button className="roll-btn" onClick={rollDice}>{t.roll}</button>}{phase==="buy"&&pending!==null&&canAct&&<div className="decision"><button onClick={buyProperty}>{t.buy} · {money(SPACES[pending].price||0)}</button><button onClick={skipDecision}>{t.skip}</button></div>}{phase==="build"&&pending!==null&&canAct&&<BuildMenu space={SPACES[pending]} dev={active?.developments?.[pending]} cash={active?.cash||0} t={t} onBuild={developProperty} onSkip={skipDecision}/>} {phase==="manage"&&!active?.ai&&canAct&&<div className="manage"><button onClick={()=>setShowStocks(true)}>{t.trade}</button><button className="end" onClick={endTurn}>{t.end} →</button></div>}{roomAuth&&!canAct&&<span className="waiting-turn">{format(t.waitTurn,{name:active?.name||""})}</span>}</div>
+  </div></section></section>
+  {showStocks&&phase!=="gameover"&&<div className="drawer"><div className="drawer-head"><div><p className="eyebrow">THE CITY EXCHANGE</p><h2>{t.stockTitle}</h2></div><button onClick={()=>setShowStocks(false)}>×</button></div><p className="disclaimer">{t.stockNote}</p><div className="stock-grid">{stocks.map(s=>{const up=s.price>=s.prev,held=active?.holdings[s.symbol]||0;return <article className="stock" key={s.symbol} style={{"--stock":s.color} as React.CSSProperties}><div><span className="ticker">{s.symbol}</span><b>{lang==="zh"?s.cn:s.name}</b></div><strong>{money(s.price)}</strong><small className={up?"up":"down"}>{up?"▲":"▼"} {Math.abs(s.price-s.prev)} · {t.held} {held}</small><div className="trade"><button disabled={phase!=="manage"||active?.ai||!canAct||held<1} onClick={()=>changeStock(s.symbol,-1)}>{t.sell}</button><button disabled={phase!=="manage"||active?.ai||!canAct||(active?.cash||0)<s.price} onClick={()=>changeStock(s.symbol,1)}>{t.buyShare}</button></div></article>})}</div></div>}
+  {phase==="gameover"&&<div className="overlay"><section className="result"><span className="crown">♛</span><p className="eyebrow">FINAL BELL</p><h1>{ranking[0]?.name}<br/>{t.winner}</h1><div className="podium">{ranking.map((p,i)=><div key={p.name}><span>{i+1}</span><b>{p.name}</b><strong>{money(netWorth(p))}</strong></div>)}</div><button className="primary" onClick={()=>{setRoomAuth(null);setScreen("setup")}}>{t.again} <span>→</span></button></section></div>}
+ </main>;
 }
 
-function Logo(){return <div className="brand"><span className="roundel">L</span><div><b>LONDON TYCOON</b><small>伦敦财富之旅</small></div></div>}
-function MapMini(){const picks=[0,2,3,5,7,8,10,11,12,13,15,17];return <div className="map-preview"><div className="preview-map-title">LONDON <small>城市财富地图</small></div>{RIVER_POINTS.slice(0,-1).map((p,i)=><i className="mini-river" style={lineStyle(p,RIVER_POINTS[i+1])} key={i}/>)}<span className="mini-thames">RIVER THAMES</span>{picks.map(i=><div className="mini-landmark" key={i} style={{left:`${MAP_POINTS[i][0]}%`,top:`${MAP_POINTS[i][1]}%`,"--icon-col":i%5,"--icon-row":Math.floor(i/5)} as React.CSSProperties}><span className="landmark-art"/><b>{SPACES[i].name}</b></div>)}<div className="pulse-route"/></div>}
+function Logo({lang}:{lang:Lang}){return <div className="brand"><span className="roundel">L</span><div><b>LONDON TYCOON</b><small>{lang==="zh"?"伦敦财富之旅":"CITY OF FORTUNE"}</small></div></div>}
+function LanguageSwitch({lang,onChange}:{lang:Lang;onChange:(l:Lang)=>void}){return <div className="lang-switch"><button className={lang==="zh"?"on":""} onClick={()=>onChange("zh")}>中文</button><button className={lang==="en"?"on":""} onClick={()=>onChange("en")}>EN</button></div>}
+function BuildMenu({space,dev,cash,t,onBuild,onSkip}:{space:(typeof SPACES)[number];dev?:Development;cash:number;t:(typeof UI)[Lang];onBuild:(k:BuildKind)=>void;onSkip:()=>void}){const kinds:BuildKind[]=space.commercial?["house","hotel","shop"]:["house"];return <div className="build-menu">{kinds.map(k=>{const max=dev?.kind===k&&dev.level>=levelMax(k),cost=buildCost(space,k,dev);return <button key={k} disabled={max||cash<cost} className={k} onClick={()=>onBuild(k)}><i>{k==="house"?"⌂":k==="hotel"?"H":"S"}</i><span>{k==="house"?t.buildHouse:k==="hotel"?t.buildHotel:t.buildShop}<small>{max?t.max:`${money(cost)} · ${dev?.kind===k?`${t.level} ${dev.level+1}`:`${t.level} 1`}`}</small></span></button>})}<button className="skip-build" onClick={onSkip}>{t.skip}</button></div>}
+function MapMini({lang}:{lang:Lang}){const picks=[0,2,3,5,7,8,10,11,12,13,15,17];return <div className="map-preview"><div className="preview-map-title">LONDON <small>{lang==="zh"?"城市财富地图":"CITY WEALTH MAP"}</small></div>{RIVER_POINTS.slice(0,-1).map((p,i)=><i className="mini-river" style={lineStyle(p,RIVER_POINTS[i+1])} key={i}/>)}<span className="mini-thames">RIVER THAMES</span>{picks.map(i=><div className="mini-landmark" key={i} style={{left:`${MAP_POINTS[i][0]}%`,top:`${MAP_POINTS[i][1]}%`,"--icon-col":i%5,"--icon-row":Math.floor(i/5)} as React.CSSProperties}><span className="landmark-art"/><b>{lang==="zh"?SPACES[i].cn:SPACES[i].name}</b></div>)}<div className="pulse-route"/></div>}
