@@ -4,6 +4,7 @@ export const rooms = sqliteTable("rooms", {
   code: text("code").primaryKey(),
   status: text("status").notNull().default("lobby"),
   gameState: text("game_state"),
+  settings: text("settings"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
