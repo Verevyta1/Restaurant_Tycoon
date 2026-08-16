@@ -45,3 +45,67 @@
 @media(max-width:900px){.game-layout{display:flex}.players-panel{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}.players-panel>.panel-title,.players-panel>.activity{grid-column:1/-1}.players-panel>.activity{grid-row:auto}.map-wrap{height:860px;padding-bottom:160px}.london-map{height:680px}.map-console{bottom:-132px}}
 @media(max-width:650px){.game-settings,.online-card .game-settings{grid-template-columns:1fr 1fr}.map-console{bottom:-160px}.map-wrap{height:900px;padding-bottom:190px}}
 @media(max-width:520px){.game-settings,.online-card .game-settings{grid-template-columns:1fr}.players-panel{grid-template-columns:1fr}.players-panel>.panel-title,.players-panel>.activity{grid-column:1}}
+
+/* v6: colored-pencil London travel map */
+.landing,.setup-page,.game-page{background-color:#f5efe5;background-image:radial-gradient(circle at 12% 18%,#e7b7aa1f 0 8%,transparent 9%),radial-gradient(circle at 86% 75%,#9fbca51f 0 10%,transparent 11%)}
+.map-wrap{background:#e9dfd1;padding:18px 18px 166px}
+.london-map.clean-map.watercolor-map{min-width:1060px;min-height:720px;overflow:visible;background-color:#f7f0e6;background-image:url('/london-pencil-board.png');background-position:center;background-repeat:no-repeat;background-size:cover;border:7px solid #17314d;border-radius:18px;box-shadow:12px 15px 0 #17314d1c}
+.watercolor-map .route-segment.road{display:none}
+.pencil-map-title{position:absolute;z-index:3;left:50%;top:49%;width:360px;transform:translate(-50%,-50%) rotate(-1.5deg);text-align:center;pointer-events:none;text-shadow:1px 1px 0 #fff8}
+.pencil-map-title small{display:block;margin-bottom:4px;color:#26384a;font:700 8px/1 Arial,sans-serif;letter-spacing:.36em}
+.pencil-map-title b,.pencil-map-title strong{display:block;font:900 58px/.78 Georgia,"Songti SC",serif;letter-spacing:.055em}
+.pencil-map-title b{color:#d8433d;transform:rotate(-1deg)}
+.pencil-map-title strong{color:#1766ad;transform:rotate(1deg)}
+.pencil-map-title em{display:block;margin-top:20px;color:#273849;font:800 11px/1 Arial,sans-serif;letter-spacing:.16em}
+.watercolor-map .map-stop.pencil-stop{width:62px;height:58px;border:3px solid #fff9ef;border-radius:9px;background:var(--paper-tile);box-shadow:0 0 0 2px color-mix(in srgb,var(--stripe) 62%,white),2px 5px 0 #17314d20;isolation:isolate}
+.watercolor-map .map-stop.pencil-stop:before{content:"";position:absolute;z-index:-1;inset:3px;border:1px dashed #17314d32;border-radius:6px;transform:rotate(-1.2deg)}
+.watercolor-map .map-stop.pencil-stop:nth-of-type(3n):before{transform:rotate(1.4deg)}
+.watercolor-map .map-stop.pencil-stop:hover,.watercolor-map .map-stop.pencil-stop.occupied{transform:translate(-50%,-50%) scale(1.08);box-shadow:0 0 0 4px #fff9ef,0 0 0 7px var(--stripe),3px 8px 12px #17314d35}
+.watercolor-map .pencil-stop .landmark-art{width:52px;height:49px;border:0;border-radius:0;background-color:transparent;background-image:url('/london-pencil-landmarks.png');background-size:500% 400%;background-position:calc(var(--icon-col) * 25%) calc(var(--icon-row) * 33.333%);filter:drop-shadow(0 2px 0 #fff7);box-shadow:none}
+.watercolor-map .pencil-stop .landmark-art.chinatown-art{background-image:url('/london-pencil-chinatown.png');background-size:contain;background-position:center}
+.watercolor-map .stop-number{position:absolute;z-index:4;left:-6px;top:-8px;min-width:17px;height:17px;padding:0 3px;border:2px solid #fff8ed;border-radius:50%;background:var(--stripe);color:white;font:900 7px/13px Arial,sans-serif;box-shadow:1px 2px 0 #17314d33}
+.watercolor-map .pencil-stop .stop-copy{z-index:5;min-width:112px;max-width:122px;padding:5px 7px;border:1px solid #17314d25;border-top:3px solid var(--stripe);border-left:1px solid #17314d25;border-radius:4px;background:#fffaf1f2;text-align:center;box-shadow:2px 3px 0 #17314d18;backdrop-filter:blur(3px)}
+.watercolor-map .pencil-stop .stop-copy b{overflow:hidden;text-overflow:ellipsis;font:700 8px/1.15 Georgia,"Songti SC",serif;color:#172d44}
+.watercolor-map .pencil-stop .stop-copy small{overflow:hidden;text-overflow:ellipsis;font-size:5.5px;color:#5b6875}
+.watercolor-map .pencil-stop.edge-top .stop-copy{top:67px;bottom:auto;left:50%;right:auto;transform:translateX(-50%)}
+.watercolor-map .pencil-stop.edge-bottom .stop-copy{top:auto;bottom:67px;left:50%;right:auto;transform:translateX(-50%)}
+.watercolor-map .pencil-stop.edge-left .stop-copy{top:50%;bottom:auto;left:70px;right:auto;transform:translateY(-50%);text-align:left}
+.watercolor-map .pencil-stop.edge-right .stop-copy{top:50%;bottom:auto;left:auto;right:70px;transform:translateY(-50%);text-align:right}
+.watercolor-map .owner-pin{z-index:8;right:-5px;top:-5px;width:13px;height:13px;border:3px solid #fffaf1;box-shadow:0 2px 3px #17314d33}
+.watercolor-map .development-badge.development-art{z-index:12;left:auto;right:-31px;top:-27px;width:49px;height:49px;border:0;border-radius:0;background-color:transparent;background-image:none;box-shadow:none;filter:drop-shadow(0 3px 2px #17314d3b)}
+.watercolor-map .development-art i{display:block;width:100%;height:100%;background-image:url('/london-pencil-buildings.png');background-size:300% 100%;background-repeat:no-repeat}
+.watercolor-map .development-art.house i{background-image:url('/london-pencil-house-levels.png');background-size:500% 100%}
+.watercolor-map .development-art.house.level-1 i{background-position:0 50%}
+.watercolor-map .development-art.house.level-2 i{background-position:25% 50%}
+.watercolor-map .development-art.house.level-3 i{background-position:50% 50%}
+.watercolor-map .development-art.house.level-4 i{background-position:75% 50%}
+.watercolor-map .development-art.house.level-5 i{background-position:100% 50%}
+.watercolor-map .development-art.hotel i{background-image:url('/london-pencil-hotel-levels.png');background-size:500% 100%}
+.watercolor-map .development-art.hotel.level-1 i{background-position:0 50%}
+.watercolor-map .development-art.hotel.level-2 i{background-position:25% 50%}
+.watercolor-map .development-art.hotel.level-3 i{background-position:50% 50%}
+.watercolor-map .development-art.hotel.level-4 i{background-position:75% 50%}
+.watercolor-map .development-art.hotel.level-5 i{background-position:100% 50%}
+.watercolor-map .development-art.shop i{background-image:url('/london-pencil-shop-levels.png');background-size:500% 100%}
+.watercolor-map .development-art.shop.level-1 i{background-position:0 50%}
+.watercolor-map .development-art.shop.level-2 i{background-position:25% 50%}
+.watercolor-map .development-art.shop.level-3 i{background-position:50% 50%}
+.watercolor-map .development-art.shop.level-4 i{background-position:75% 50%}
+.watercolor-map .development-art.shop.level-5 i{background-position:100% 50%}
+.watercolor-map .development-art b{right:-1px;top:-1px;width:16px;height:16px;background:#17314d;border:2px solid #fffaf1;color:#fff;font:800 7px/12px Arial}
+.watercolor-map .moving-pawn{transform:translate(22px,-17px);width:23px;height:23px;border:3px solid #fffaf1;box-shadow:0 3px 7px #17314d66}
+.watercolor-map .map-legend{right:24%;bottom:4%;padding:8px 11px;border:1px solid #17314d25;border-radius:8px;background:#fffaf1d9;box-shadow:2px 4px 0 #17314d16;backdrop-filter:blur(3px)}
+.watercolor-map .map-legend i{width:23px;height:23px;border:0;border-radius:0;background-color:transparent;background-image:url('/london-pencil-buildings.png');background-size:300% 100%;font-size:0}
+.watercolor-map .map-legend .legend-house{background-position:0 50%}
+.watercolor-map .map-legend .legend-hotel{background-position:50% 50%}
+.watercolor-map .map-legend .legend-shop{background-position:100% 50%}
+.watercolor-map .map-console{bottom:-138px;border:1px solid #17314d35;border-bottom:5px solid #17314d;border-radius:10px;background:#fffaf1f2;box-shadow:6px 8px 0 #17314d19}
+.map-preview.clean-preview.pencil-preview{background-color:#f7f0e6;background-image:url('/london-pencil-board.png');background-position:center;background-repeat:no-repeat;background-size:cover;border-color:#17314d;border-radius:16px;box-shadow:18px 23px 0 #17314d17}
+.pencil-preview .mini-landmark{display:none}
+.pencil-preview .preview-map-title{left:50%;top:50%;width:230px;transform:translate(-50%,-50%) rotate(-2deg);text-align:center;color:inherit;text-shadow:1px 1px 0 #fff8}
+.pencil-preview .preview-map-title b,.pencil-preview .preview-map-title strong{display:block;font:900 39px/.82 Georgia,serif;letter-spacing:.04em}
+.pencil-preview .preview-map-title b{color:#d8433d}
+.pencil-preview .preview-map-title strong{color:#1766ad}
+.pencil-preview .preview-map-title small{margin-top:14px;color:#26384a;font:800 7px/1 Arial,sans-serif;letter-spacing:.18em}
+@media(max-width:900px){.map-wrap{height:910px;padding-bottom:172px}.london-map.clean-map.watercolor-map{height:720px}.watercolor-map .map-console{bottom:-138px}}
+@media(max-width:650px){.map-wrap{height:940px;padding-bottom:202px}.watercolor-map .map-console{bottom:-170px}.pencil-map-title{width:290px}.pencil-map-title b,.pencil-map-title strong{font-size:48px}}
