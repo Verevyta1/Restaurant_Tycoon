@@ -10,25 +10,25 @@ type Stock = { symbol:string; name:string; price:number; prev:number; color:stri
 const COLORS = ["#e33a36", "#2e72c7", "#158a79", "#e2a62a"];
 const SPACES:{name:string; cn:string; type:SpaceType; price?:number; rent?:number; color?:string; icon:string}[] = [
   {name:"King’s Cross",cn:"国王十字",type:"start",icon:"⌂"},
-  {name:"British Museum",cn:"大英博物馆",type:"property",price:220,rent:42,color:"#9a6a45",icon:"▥"},
-  {name:"Market News",cn:"市场新闻",type:"event",icon:"✦"},
-  {name:"St Paul’s",cn:"圣保罗大教堂",type:"property",price:260,rent:52,color:"#78b7dc",icon:"♜"},
+  {name:"Camden Market",cn:"卡姆登市场",type:"property",price:200,rent:38,color:"#9a6a45",icon:"◆"},
+  {name:"Abbey Road",cn:"艾比路",type:"property",price:240,rent:48,color:"#4b9b75",icon:"♫"},
+  {name:"Notting Hill",cn:"诺丁山",type:"property",price:320,rent:68,color:"#4b9b75",icon:"⌂"},
+  {name:"Hyde Park",cn:"海德公园",type:"bonus",icon:"♣"},
+  {name:"Buckingham Palace",cn:"白金汉宫",type:"property",price:440,rent:102,color:"#e7b72f",icon:"♛"},
+  {name:"Westminster",cn:"威斯敏斯特",type:"property",price:360,rent:78,color:"#e3563f",icon:"▥"},
+  {name:"Big Ben",cn:"大本钟",type:"property",price:380,rent:84,color:"#e3563f",icon:"♜"},
+  {name:"London Eye",cn:"伦敦眼",type:"bonus",icon:"◉"},
+  {name:"Borough Market",cn:"博罗市场",type:"stock",icon:"↗"},
   {name:"The Shard",cn:"碎片大厦",type:"property",price:300,rent:62,color:"#78b7dc",icon:"▲"},
   {name:"Tower Bridge",cn:"伦敦塔桥",type:"bonus",icon:"♛"},
   {name:"Canary Wharf",cn:"金丝雀码头",type:"property",price:340,rent:72,color:"#d24676",icon:"▥"},
-  {name:"City Tax",cn:"城市税",type:"tax",icon:"£"},
   {name:"Greenwich",cn:"格林尼治",type:"property",price:280,rent:58,color:"#d24676",icon:"◷"},
-  {name:"Borough Market",cn:"博罗市场",type:"stock",icon:"↗"},
-  {name:"London Eye",cn:"伦敦眼",type:"bonus",icon:"◉"},
-  {name:"Big Ben",cn:"大本钟",type:"property",price:380,rent:84,color:"#e3563f",icon:"♜"},
-  {name:"Westminster",cn:"威斯敏斯特",type:"property",price:360,rent:78,color:"#e3563f",icon:"▥"},
-  {name:"Chance",cn:"伦敦奇遇",type:"event",icon:"?"},
-  {name:"Buckingham Palace",cn:"白金汉宫",type:"property",price:440,rent:102,color:"#e7b72f",icon:"♛"},
-  {name:"Hyde Park",cn:"海德公园",type:"bonus",icon:"♣"},
-  {name:"Notting Hill",cn:"诺丁山",type:"property",price:320,rent:68,color:"#4b9b75",icon:"⌂"},
+  {name:"Market News",cn:"市场新闻",type:"event",icon:"✦"},
+  {name:"St Paul’s",cn:"圣保罗大教堂",type:"property",price:260,rent:52,color:"#78b7dc",icon:"♜"},
   {name:"Stock Exchange",cn:"伦敦交易所",type:"stock",icon:"▥"},
-  {name:"Abbey Road",cn:"艾比路",type:"property",price:240,rent:48,color:"#4b9b75",icon:"♫"},
-  {name:"Camden Market",cn:"卡姆登市场",type:"property",price:200,rent:38,color:"#9a6a45",icon:"◆"},
+  {name:"British Museum",cn:"大英博物馆",type:"property",price:220,rent:42,color:"#9a6a45",icon:"▥"},
+  {name:"Soho Chance",cn:"苏豪奇遇",type:"event",icon:"?"},
+  {name:"Covent Garden",cn:"科文特花园",type:"tax",icon:"£"},
 ];
 
 const INITIAL_STOCKS:Stock[] = [
@@ -42,12 +42,12 @@ const INITIAL_STOCKS:Stock[] = [
   {symbol:"UMB",name:"雨伞保险",price:53,prev:53,color:"#52667d"},
 ];
 
-const boardPos = (i:number) => {
-  if(i <= 5) return {gridColumn:i+1,gridRow:1};
-  if(i <= 9) return {gridColumn:6,gridRow:i-4};
-  if(i <= 15) return {gridColumn:16-i,gridRow:6};
-  return {gridColumn:1,gridRow:21-i};
-};
+const MAP_POINTS = [
+  [50,15],[39,10],[21,23],[13,40],[23,52],[34,62],[41,67],[44,63],[49,60],[59,57],
+  [64,53],[72,52],[88,49],[91,70],[82,62],[61,36],[65,29],[43,29],[39,42],[48,43]
+];
+const RIVER_POINTS = [[-4,63],[12,61],[27,68],[43,68],[57,62],[70,56],[84,59],[104,73]];
+const lineStyle = (a:number[],b:number[]) => { const dx=b[0]-a[0],dy=b[1]-a[1]; return {left:`${a[0]}%`,top:`${a[1]}%`,width:`${Math.hypot(dx,dy)}%`,transform:`rotate(${Math.atan2(dy,dx)*180/Math.PI}deg)`}; };
 
 const money = (n:number) => `£${Math.round(n).toLocaleString("en-GB")}`;
 
@@ -170,7 +170,7 @@ export default function Home(){
 
   if(screen==="home")return <main className="landing">
     <header className="topbar"><Logo/><span className="tag">4 位玩家 · 地产 · 股票</span></header>
-    <section className="hero"><div className="hero-copy"><p className="eyebrow">WELCOME TO THE CAPITAL</p><h1>从泰晤士河畔，<br/>建立你的伦敦帝国。</h1><p>收购城市地标、交易 8 支虚构股票，与好友和聪明的电脑对手角逐伦敦首富。</p><button className="primary" onClick={()=>setScreen("setup")}>开始新游戏 <span>→</span></button><div className="facts"><span><b>20</b> 城市站点</span><span><b>8</b> 虚构股票</span><span><b>4</b> 玩家席位</span></div></div><BoardMini/></section>
+    <section className="hero"><div className="hero-copy"><p className="eyebrow">WELCOME TO THE CAPITAL</p><h1>从泰晤士河畔，<br/>建立你的伦敦帝国。</h1><p>沿真实伦敦方位探索城市地标、交易 8 支虚构股票，与好友和聪明的电脑对手角逐伦敦首富。</p><button className="primary" onClick={()=>setScreen("setup")}>开始新游戏 <span>→</span></button><div className="facts"><span><b>20</b> 城市站点</span><span><b>8</b> 虚构股票</span><span><b>4</b> 玩家席位</span></div></div><MapMini/></section>
     <footer className="landing-footer"><span>BIG BEN</span><span>THE SHARD</span><span>TOWER BRIDGE</span><span>BUCKINGHAM PALACE</span></footer>
   </main>;
 
@@ -180,7 +180,18 @@ export default function Home(){
     <header className="game-head"><Logo/><div className="round"><small>当前进度</small><b>第 {round} / 20 回合</b></div><button className="market-btn" onClick={()=>setShowStocks(!showStocks)}>股票市场 <span>↗</span></button></header>
     <section className="game-layout">
       <aside className="players-panel"><p className="panel-title">玩家资产</p>{players.map((p,i)=><article className={`player-card ${i===current?"active":""}`} key={i} style={{"--player":p.color} as React.CSSProperties}><div className="avatar">{p.ai?"◆":"●"}</div><div className="player-info"><b>{p.name}</b><small>{p.ai?"电脑玩家":"真人玩家"} · 总资产 {money(netWorth(p))}</small></div><strong>{money(p.cash)}</strong><div className="mini-assets"><span>{p.properties.length} 处地产</span><span>{Object.values(p.holdings).reduce((a,b)=>a+b,0)} 股</span></div></article>)}<div className="activity"><p className="panel-title">伦敦动态</p>{log.map((x,i)=><p key={i}>{x}</p>)}</div></aside>
-      <section className="board-wrap"><div className="game-board">{SPACES.map((s,i)=><div className={`space ${s.type}`} style={{...boardPos(i),"--stripe":s.color||"#18334e"} as React.CSSProperties} key={s.name}><span className="space-icon">{s.icon}</span><b>{s.cn}</b><small>{s.type==="property"?money(s.price||0):s.name}</small>{owners[i]!==undefined&&<i className="owner-dot" style={{background:players[owners[i]].color}}/>}<div className="tokens">{players.map((p,pi)=>p.pos===i&&<span key={pi} style={{background:p.color}}>{pi+1}</span>)}</div></div>)}<div className="board-center"><div className="river-line">RIVER THAMES</div><span className="center-mark">LT</span><h2>LONDON<br/>TYCOON</h2><p>{message}</p><div className="dice-row"><span className="die">{dice[dice.length-2]}</span><span className="die">{dice[dice.length-1]}</span></div>{phase==="roll"&&!active?.ai&&<button className="roll-btn" onClick={rollDice}>掷骰子</button>}{phase==="decision"&&pending!==null&&<div className="decision"><button onClick={buyProperty}>以 {money(SPACES[pending].price||0)} 收购</button><button onClick={()=>{setPending(null);setPhase("manage");setMessage("你放弃了这处地标，可以交易股票或结束回合。");}}>暂不购买</button></div>}{phase==="manage"&&!active?.ai&&<div className="manage"><button onClick={()=>setShowStocks(true)}>交易股票</button><button className="end" onClick={endTurn}>结束回合 →</button></div>}</div></div></section>
+      <section className="map-wrap"><div className="london-map">
+        <div className="map-title"><small>GREATER LONDON · 城市财富地图</small><b>LONDON</b></div>
+        <div className="park park-one">HYDE PARK</div><div className="park park-two">GREENWICH PARK</div>
+        {[...Array(15)].map((_,i)=><i className={`street street-${i}`} key={`street-${i}`}/>) }
+        {RIVER_POINTS.slice(0,-1).map((p,i)=><i className="thames-segment" style={lineStyle(p,RIVER_POINTS[i+1])} key={`river-${i}`}/>) }
+        <span className="thames-label">RIVER THAMES · 泰晤士河</span>
+        {MAP_POINTS.slice(0,-1).map((p,i)=><i className="route-segment" style={lineStyle(p,MAP_POINTS[i+1])} key={`route-${i}`}/>) }
+        <i className="route-segment" style={lineStyle(MAP_POINTS[MAP_POINTS.length-1],MAP_POINTS[0])}/>
+        {SPACES.map((s,i)=><button className={`map-stop ${s.type} ${players.some(p=>p.pos===i)?"occupied":""}`} style={{left:`${MAP_POINTS[i][0]}%`,top:`${MAP_POINTS[i][1]}%`,"--stripe":s.color||"#18334e"} as React.CSSProperties} key={s.name} aria-label={`${s.cn} ${s.name}`}><span className="landmark-icon">{s.icon}</span><span className="stop-copy"><b>{s.cn}</b><small>{s.type==="property"?`${s.name} · ${money(s.price||0)}`:s.name}</small></span>{owners[i]!==undefined&&<i className="owner-pin" style={{background:players[owners[i]].color}}/>}</button>)}
+        {players.map((p,pi)=><span className="moving-pawn" key={pi} style={{left:`${MAP_POINTS[p.pos][0]}%`,top:`${MAP_POINTS[p.pos][1]}%`,background:p.color,zIndex:12+pi}}>{pi+1}</span>)}
+        <div className="map-console"><div><small>当前位置</small><b>{active?SPACES[active.pos].cn:"伦敦"}</b><p>{message}</p></div><div className="dice-row"><span className="die">{dice[0]}</span><span className="die">{dice[1]}</span></div>{phase==="roll"&&!active?.ai&&<button className="roll-btn" onClick={rollDice}>掷骰子</button>}{phase==="decision"&&pending!==null&&<div className="decision"><button onClick={buyProperty}>以 {money(SPACES[pending].price||0)} 收购</button><button onClick={()=>{setPending(null);setPhase("manage");setMessage("你放弃了这处地标，可以交易股票或结束回合。");}}>暂不购买</button></div>}{phase==="manage"&&!active?.ai&&<div className="manage"><button onClick={()=>setShowStocks(true)}>交易股票</button><button className="end" onClick={endTurn}>结束回合 →</button></div>}</div>
+      </div></section>
     </section>
     {showStocks&&phase!=="gameover"&&<div className="drawer"><div className="drawer-head"><div><p className="eyebrow">THE CITY EXCHANGE</p><h2>伦敦虚拟股票市场</h2></div><button onClick={()=>setShowStocks(false)}>×</button></div><p className="disclaimer">以下 8 支股票均为游戏内虚构资产。价格每回合随机波动，仅用于娱乐。</p><div className="stock-grid">{stocks.map(st=>{const up=st.price>=st.prev,held=active?.holdings[st.symbol]||0;return <article className="stock" key={st.symbol} style={{"--stock":st.color} as React.CSSProperties}><div><span className="ticker">{st.symbol}</span><b>{st.name}</b></div><strong>{money(st.price)}</strong><small className={up?"up":"down"}>{up?"▲":"▼"} {Math.abs(st.price-st.prev)} · 持有 {held} 股</small><div className="trade"><button disabled={phase!=="manage"||active?.ai||held<1} onClick={()=>changeStock(st.symbol,-1)}>卖出</button><button disabled={phase!=="manage"||active?.ai||(active?.cash||0)<st.price} onClick={()=>changeStock(st.symbol,1)}>买入 1 股</button></div></article>})}</div></div>}
     {phase==="gameover"&&<div className="overlay"><section className="result"><span className="crown">♛</span><p className="eyebrow">FINAL BELL</p><h1>{ranking[0]?.name}<br/>成为伦敦首富！</h1><div className="podium">{ranking.map((p,i)=><div key={p.name}><span>{i+1}</span><b>{p.name}</b><strong>{money(netWorth(p))}</strong></div>)}</div><button className="primary" onClick={()=>setScreen("setup")}>再玩一局 <span>→</span></button></section></div>}
@@ -188,4 +199,4 @@ export default function Home(){
 }
 
 function Logo(){return <div className="brand"><span className="roundel">L</span><div><b>LONDON TYCOON</b><small>伦敦财富之旅</small></div></div>}
-function BoardMini(){const labels=["King’s Cross","British Museum","St Paul’s","Tower Bridge","Canary Wharf","Greenwich","London Eye","Big Ben","Buckingham Palace","Hyde Park","Notting Hill","Abbey Road"];return <div className="board-preview"><div className="river"><span>RIVER THAMES</span></div><div className="preview-grid">{labels.map((x,i)=><div className={`preview-tile pt-${i}`} key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x}</b><small>伦敦地标</small></div>)}<div className="preview-center"><span>LT</span><b>THE CITY<br/>IS YOURS</b><small>掷骰 · 收购 · 交易</small></div></div></div>}
+function MapMini(){const picks=[0,2,3,5,7,8,10,11,12,13,15,17];return <div className="map-preview"><div className="preview-map-title">LONDON <small>城市财富地图</small></div>{RIVER_POINTS.slice(0,-1).map((p,i)=><i className="mini-river" style={lineStyle(p,RIVER_POINTS[i+1])} key={i}/>)}<span className="mini-thames">RIVER THAMES</span>{picks.map(i=><div className="mini-landmark" key={i} style={{left:`${MAP_POINTS[i][0]}%`,top:`${MAP_POINTS[i][1]}%`}}><span>{SPACES[i].icon}</span><b>{SPACES[i].name}</b></div>)}<div className="pulse-route"/></div>}
