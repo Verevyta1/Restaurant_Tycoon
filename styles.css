@@ -24,6 +24,7 @@ body {
 .eyebrow { color: #ffd166; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 h1 { margin: 12px 0; font-size: clamp(3rem, 12vw, 6rem); line-height: .95; }
 .intro { margin: 0 auto 32px; max-width: 35rem; color: #d8e8dc; font-size: 1.2rem; line-height: 1.6; }
+.red-square { width: 120px; height: 120px; margin: 0 auto 32px; background: #e53935; }
 button { border: 0; border-radius: 999px; padding: 15px 28px; background: #ffd166; color: #23352a; cursor: pointer; font: inherit; font-weight: 800; }
 button:hover, button:focus-visible { background: #ffe09a; transform: translateY(-2px); }
 .game-message { min-height: 1.5rem; margin-top: 20px; color: #ffd166; }
