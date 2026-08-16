@@ -133,3 +133,30 @@
 /* v8: explicit lobby exit and host cancellation */
 .lobby-controls{display:flex;align-items:center;justify-content:flex-end;gap:9px}.lobby-controls>b{font-size:10px;color:var(--muted)}.lobby-controls .primary{margin:0}.cancel-room{border:1px solid #c83b3866;background:#fffaf1;color:#b43331;padding:11px 14px;font-size:8px;font-weight:900;letter-spacing:.04em}.cancel-room:hover{background:#c83b38;color:#fff}.cancel-room:disabled{opacity:.45;cursor:wait}
 @media(max-width:650px){.lobby-controls{width:100%;justify-content:space-between}.lobby-controls .primary,.lobby-controls .cancel-room{flex:1}}
+
+/* v9: the background pencil squares are the route; stations stay compact */
+.london-map.clean-map.watercolor-map{background-size:100% 100%}
+.watercolor-map .map-stop.pencil-stop{width:72px;height:58px;overflow:visible;border:3px solid #fff9ef;border-radius:8px;background:color-mix(in srgb,var(--paper-tile) 82%,#fffaf1);box-shadow:0 0 0 2px color-mix(in srgb,var(--paper-tile) 62%,#17314d),1px 4px 7px #17314d26}
+.watercolor-map .map-stop.pencil-stop:before{inset:3px;border-radius:5px;border-color:#17314d24}
+.watercolor-map .map-stop.pencil-stop:hover,.watercolor-map .map-stop.pencil-stop:focus-visible,.watercolor-map .map-stop.pencil-stop.occupied{z-index:35;transform:translate(-50%,-50%) scale(1.04);box-shadow:0 0 0 3px #fff9ef,0 0 0 5px color-mix(in srgb,var(--paper-tile) 72%,#17314d),2px 7px 11px #17314d32;outline:none}
+.watercolor-map .map-stop.pencil-stop.owned{background:var(--paper-tile);box-shadow:0 0 0 3px #fff9ef,0 0 0 5px var(--paper-tile),2px 6px 9px #17314d30}
+.watercolor-map .pencil-stop .landmark-art,.watercolor-map .pencil-stop.edge-top .landmark-art,.watercolor-map .pencil-stop.edge-bottom .landmark-art,.watercolor-map .pencil-stop.edge-left .landmark-art,.watercolor-map .pencil-stop.edge-right .landmark-art{position:absolute;z-index:3;left:50%;right:auto;top:3px;bottom:auto;width:46px;height:42px;transform:translateX(-50%);filter:drop-shadow(0 2px 1px #17314d25)}
+.watercolor-map .pencil-stop .stop-copy,.watercolor-map .pencil-stop.edge-top .stop-copy,.watercolor-map .pencil-stop.edge-bottom .stop-copy,.watercolor-map .pencil-stop.edge-left .stop-copy,.watercolor-map .pencil-stop.edge-right .stop-copy{position:absolute;z-index:42;width:max-content;min-width:98px;max-width:150px;padding:6px 8px;border:1px solid #17314d2b;border-top:3px solid var(--stripe);border-radius:5px;background:#fffaf1f7;text-align:center;box-shadow:3px 5px 10px #17314d25;backdrop-filter:blur(4px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease,transform .16s ease}
+.watercolor-map .pencil-stop.edge-bottom .stop-copy{left:50%;right:auto;top:auto;bottom:66px;transform:translate(-50%,3px)}
+.watercolor-map .pencil-stop.edge-top .stop-copy{left:50%;right:auto;top:66px;bottom:auto;transform:translate(-50%,-3px)}
+.watercolor-map .pencil-stop.edge-left .stop-copy{left:78px;right:auto;top:50%;bottom:auto;transform:translate(3px,-50%);text-align:left}
+.watercolor-map .pencil-stop.edge-right .stop-copy{left:auto;right:78px;top:50%;bottom:auto;transform:translate(-3px,-50%);text-align:right}
+.watercolor-map .pencil-stop:hover .stop-copy,.watercolor-map .pencil-stop:focus-visible .stop-copy{opacity:1;visibility:visible}
+.watercolor-map .pencil-stop.edge-bottom:hover .stop-copy,.watercolor-map .pencil-stop.edge-bottom:focus-visible .stop-copy,.watercolor-map .pencil-stop.edge-top:hover .stop-copy,.watercolor-map .pencil-stop.edge-top:focus-visible .stop-copy{transform:translate(-50%,0)}
+.watercolor-map .pencil-stop.edge-left:hover .stop-copy,.watercolor-map .pencil-stop.edge-left:focus-visible .stop-copy,.watercolor-map .pencil-stop.edge-right:hover .stop-copy,.watercolor-map .pencil-stop.edge-right:focus-visible .stop-copy{transform:translate(0,-50%)}
+.watercolor-map .pencil-stop .stop-copy b{display:block;min-height:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8.5px;line-height:1.1}
+.watercolor-map .pencil-stop .stop-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;font-size:5.8px;line-height:1.2}
+.watercolor-map .owner-pin{display:none}
+.watercolor-map .development-badge.development-art{z-index:14;left:auto;right:-11px;top:-12px;width:38px;height:38px;filter:drop-shadow(0 2px 1px #17314d45)}
+.watercolor-map .development-art b{right:-2px;top:-2px;width:14px;height:14px;border-width:2px;font-size:6px;line-height:10px}
+.watercolor-map .moving-pawn{width:21px;height:21px;transform:translate(-50%,-50%);border:3px solid #fffaf1;box-shadow:0 0 0 2px #17314d4a,0 3px 7px #17314d66;transition:left .22s linear,top .22s linear}
+.players-panel{grid-template-rows:auto auto auto minmax(390px,1fr)}
+.activity{min-height:390px}
+.activity-list{min-height:300px;max-height:380px;overflow-y:auto;gap:3px;padding:6px 2px 7px 0}
+.activity-list p{padding:3px 7px;font-size:7.2px;line-height:1.35}
+@media(max-width:1100px){.players-panel{grid-template-rows:auto}.activity{min-height:390px}.activity-list{min-height:300px}}
