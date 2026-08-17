@@ -185,3 +185,49 @@
 .watercolor-map .compact-station.edge-right .stop-copy{right:52px}
 @media(max-width:1100px){.london-map.clean-map.watercolor-map{width:850px;height:850px;min-width:850px;min-height:850px}.map-wrap{height:auto;min-height:1040px}}
 @media(max-width:900px){.map-wrap{height:1040px;min-height:1040px}.london-map.clean-map.watercolor-map{height:850px}}
+
+/* v11: open banking, round news, contextual charts and London event alerts */
+.hero-copy{width:min(44vw,650px)}
+.hero-copy h1{font-size:clamp(40px,4.5vw,64px)}
+.hero-empire-line{display:block;white-space:nowrap;font-size:.78em;letter-spacing:-.07em;margin-top:7px}
+.game-head{grid-template-columns:1fr auto auto auto}
+.finance-nav{justify-self:end;display:flex;align-items:stretch;gap:6px}
+.finance-nav .market-btn,.finance-nav .bank-btn{justify-self:auto;border:0;padding:11px 13px;color:#fff;font-size:10px;font-weight:800;white-space:nowrap}
+.finance-nav .market-btn{background:var(--ink)}
+.finance-nav .bank-btn{background:#158a79}
+.finance-nav button span{margin-left:9px;color:#fff9;line-height:1}
+.round-news{position:absolute;z-index:16;left:50%;top:28%;width:430px;transform:translateX(-50%) rotate(-.7deg);padding:12px 16px 11px;border:1px solid #17314d31;border-top:5px solid var(--ink);border-radius:6px;background:#fffaf1ef;box-shadow:4px 6px 0 #17314d18;text-align:left;backdrop-filter:blur(4px)}
+.round-news small,.round-news b,.round-news em{display:block}
+.round-news small{font-size:6.5px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#c13f39}
+.round-news b{margin-top:6px;font:700 14px/1.15 Georgia,"Songti SC",serif}
+.round-news p{margin:5px 0 6px;font-size:7.5px;line-height:1.4;color:#536172}
+.round-news em{font-style:normal;font-size:6px;color:#7a6954}
+.stock{cursor:default;align-content:start}
+.stock-name-button{min-width:0;border:0;background:transparent;color:var(--ink);padding:0;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;text-align:left}
+.stock-name-button .ticker{grid-row:1/3}
+.stock-name-button b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0;font-size:9px}
+.stock-name-button i{font-style:normal;font-size:16px;color:var(--stock)}
+.stock-inline-chart{grid-column:1/3;margin-top:3px;padding:9px;background:#fffaf1;border:1px solid #17314d1d}
+.stock-inline-chart .stock-chart{height:120px;margin-top:0}
+.stock-inline-chart .chart-stats{margin-top:7px}
+.loan-summary{grid-template-columns:repeat(2,1fr)}
+.loan-borrow{display:grid;grid-template-columns:1fr 1.25fr;align-items:end;gap:10px;margin:0 0 18px;padding:14px;border:1px solid #158a7952;background:#e8f2ed}
+.loan-borrow label>span,.loan-borrow small{display:block;margin-bottom:6px;font-size:7px;font-weight:800;letter-spacing:.07em;color:#4f6a62}
+.loan-borrow input{width:100%;height:40px;border:1px solid #17314d3d;background:#fffaf1;padding:0 10px;font:800 13px monospace;color:var(--ink)}
+.loan-borrow>div button,.loan-borrow.emergency button{width:100%;height:40px;border:0;background:#158a79;color:#fff;font-size:8px;font-weight:900}
+.loan-borrow button:disabled{opacity:.35;cursor:not-allowed}
+.loan-borrow.emergency{grid-template-columns:1fr auto;border-color:#d25a5266;background:#f7e9e4}
+.loan-borrow.emergency b{display:block;font:24px Georgia,serif;color:#c83b38}
+.loan-borrow.emergency button{width:auto;padding:0 18px;background:#c83b38}
+.city-event-overlay{position:fixed;z-index:60;inset:0;display:grid;place-items:center;padding:24px;background:#10253e36;pointer-events:none}
+.city-event-card{width:min(560px,88vw);padding:26px 30px;border:1px solid #17314d3b;border-left:9px solid #c83b38;background:#fffaf1f7;box-shadow:14px 16px 0 #10253e2b;text-align:center;backdrop-filter:blur(8px);animation:eventPop .35s cubic-bezier(.2,.85,.2,1) both}
+.city-event-card.gain{border-left-color:#158a79}
+.city-event-card small{font-size:7px;font-weight:900;letter-spacing:.17em;text-transform:uppercase;color:var(--muted)}
+.city-event-card h2{margin:10px 0 7px;font:700 clamp(24px,4vw,38px)/1.1 Georgia,"Songti SC",serif}
+.city-event-card p{max-width:470px;margin:0 auto;color:#536172;font-size:11px;line-height:1.6}
+.city-event-card strong{display:block;margin-top:15px;color:#c83b38;font:700 30px Georgia,serif}
+.city-event-card.gain strong{color:#158a79}
+@keyframes eventPop{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.city-event-overlay,.city-event-card{animation:none}}
+@media(max-width:900px){.hero-copy{width:auto}.round-news{width:400px}.game-head{grid-template-columns:1fr auto auto}.game-head .round{display:none}.game-head:has(.online-badge){grid-template-columns:auto auto 1fr auto}.online-badge{display:none}}
+@media(max-width:650px){.hero-copy h1{font-size:44px}.hero-empire-line{font-size:.68em}.game-head{height:auto;min-height:72px;padding:8px 12px;grid-template-columns:1fr auto}.game-head .lang-switch{display:none}.finance-nav{gap:4px}.finance-nav .market-btn,.finance-nav .bank-btn{padding:10px 8px;font-size:8px}.finance-nav button span{display:none}.round-news{top:29%;width:320px}.stock-inline-chart .stock-chart{height:145px}.loan-borrow{grid-template-columns:1fr}.city-event-card{padding:22px 20px}.city-event-card p{font-size:10px}}
