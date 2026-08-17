@@ -258,3 +258,13 @@
 .activity{min-height:255px}
 .activity-list{min-height:165px;max-height:235px}
 @media(max-width:1100px){.players-panel{grid-template-rows:auto}.activity{min-height:255px}.activity-list{min-height:165px;max-height:235px}}
+
+/* v14: every small pencil tile is a purchasable London street plot */
+.watercolor-map .map-stop.pencil-stop.street-property{width:36px;height:46px;border:1px solid transparent;border-radius:6px;background:transparent;box-shadow:none}
+.watercolor-map .map-stop.pencil-stop.street-property.owned{border:3px solid var(--owner-color);background:transparent;box-shadow:0 0 0 2px #fffaf1,0 0 0 4px var(--owner-color),1px 4px 7px #17314d24}
+.watercolor-map .street-property .development-badge.development-art{right:-9px;bottom:-9px;width:27px;height:27px}
+.watercolor-map .street-property .development-art b{width:12px;height:12px;font-size:5px;line-height:8px}
+.watercolor-map .street-property.edge-top .stop-copy{top:53px}
+.watercolor-map .street-property.edge-bottom .stop-copy{bottom:53px}
+.watercolor-map .street-property.edge-left .stop-copy{left:45px}
+.watercolor-map .street-property.edge-right .stop-copy{right:45px}
