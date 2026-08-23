@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "London Tycoon — 伦敦大富翁",
   description: "创建在线房间，邀请朋友在真实伦敦方位的动画地图上一起玩地产与虚构股票策略游戏。",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
-  metadataBase: new URL("https://london-tycoon-game.bububebe1905.chatgpt.site"),
+  metadataBase: new URL("https://london-tycoon.pages.dev"),
   openGraph: {
     title: "London Tycoon — 伦敦大富翁",
     description: "邀请朋友加入伦敦财富路线：买地产、盖建筑、投资股票并升级双骰。",
