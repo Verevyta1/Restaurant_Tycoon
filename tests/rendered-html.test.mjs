@@ -20,24 +20,29 @@ test("server renders the London Tycoon home screen", async () => {
   const html = await response.text();
   assert.match(html, /London Tycoon/i);
   assert.match(html, /Play online with friends|在线与朋友玩/);
-  assert.match(html, /56/);
+  assert.match(html, /24/);
 });
 
-test("board keeps equal route cells, upgrades, controls, and pawns separate", async () => {
+test("board keeps a short curved route, external labels, upgrades, controls, and pawns separate", async () => {
   const [board, mapData, styles] = await Promise.all([
     readFile(new URL("../app/game-board.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/game-map-data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/game-board.css", import.meta.url), "utf8"),
   ]);
-  assert.match(mapData, /ROUTE_CELL_COUNT = 56/);
-  assert.match(mapData, /BOARD_GRID_SIZE = 15/);
+  assert.match(mapData, /ROUTE_CELL_COUNT = 24/);
+  assert.match(mapData, /MapRoutePoint/);
   assert.match(mapData, /LANDMARK_STATION_CELLS/);
+  assert.equal(mapData.match(/\{ x: \d+, y: \d+, label:/g)?.length, 24);
   assert.match(board, /board-empty-center/);
+  assert.match(board, /board-route-art/);
+  assert.match(board, /board-station/);
   assert.match(board, /board-development/);
   assert.match(board, /board-pawn/);
   assert.match(board, /property-upgrade-1\.png/);
   assert.match(board, /property-upgrade-2\.png/);
   assert.match(board, /property-upgrade-3\.png/);
-  assert.match(styles, /repeat\(15/);
-  assert.doesNotMatch(board, /board-title|board-route/);
+  assert.match(styles, /aspect-ratio: 10 \/ 7/);
+  assert.match(styles, /board-stop-copy/);
+  assert.match(styles, /width: 78px/);
+  assert.doesNotMatch(board, /board-title|pencil-map-title|LONDON TYCOON|伦敦大富翁/);
 });

@@ -34,22 +34,12 @@ const MOVE_STEP_MS=260;
 const ACTIVITY_PAGE_SIZE=10;
 const SPACES:{name:string;cn:string;type:SpaceType;price?:number;rent?:number;color?:string;commercial?:boolean}[]=[
   {name:"Big Ben",cn:"大本钟",type:"start"},
-  {name:"Westminster",cn:"威斯敏斯特",type:"property",price:360,rent:34,color:"#e3563f"},
   {name:"Buckingham Palace",cn:"白金汉宫",type:"property",price:440,rent:42,color:"#ef8f38"},
   {name:"Hyde Park",cn:"海德公园",type:"property",price:290,rent:25,color:"#7c9b5d"},
-  {name:"Chinatown",cn:"伦敦唐人街",type:"property",price:315,rent:30,color:"#d74b58",commercial:true},
-  {name:"Natural History Museum",cn:"自然历史博物馆",type:"property",price:270,rent:23,color:"#9a6a45"},
-  {name:"Royal Albert Hall",cn:"皇家阿尔伯特音乐厅",type:"property",price:330,rent:30,color:"#78b7dc",commercial:true},
-  {name:"Notting Hill",cn:"诺丁山",type:"property",price:320,rent:28,color:"#ef8f38"},
-  {name:"Portobello Road",cn:"波多贝罗路",type:"property",price:285,rent:25,color:"#d24676",commercial:true},
   {name:"British Museum",cn:"大英博物馆",type:"property",price:260,rent:22,color:"#9a6a45"},
-  {name:"Covent Garden",cn:"科文特花园",type:"property",price:310,rent:29,color:"#4b9b75",commercial:true},
-  {name:"Trafalgar Square",cn:"特拉法加广场",type:"property",price:305,rent:27,color:"#ef8f38"},
   {name:"London Eye",cn:"伦敦眼",type:"property",price:375,rent:35,color:"#78b7dc",commercial:true},
   {name:"Tower Bridge",cn:"伦敦塔桥",type:"property",price:410,rent:39,color:"#6b8eb6",commercial:true},
   {name:"The Shard",cn:"碎片大厦",type:"property",price:420,rent:40,color:"#78b7dc",commercial:true},
-  {name:"Tate Modern",cn:"泰特现代美术馆",type:"property",price:300,rent:27,color:"#78b7dc"},
-  {name:"Leadenhall Market",cn:"利德贺市场",type:"property",price:340,rent:31,color:"#d56b4d",commercial:true},
   {name:"Borough Market",cn:"博罗市场",type:"property",price:300,rent:27,color:"#ef8f38",commercial:true},
   {name:"Greenwich",cn:"格林尼治",type:"property",price:280,rent:24,color:"#4b9b75"},
   {name:"Piccadilly Circus",cn:"皮卡迪利圆环",type:"property",price:350,rent:33,color:"#7e65b5",commercial:true},
@@ -131,7 +121,7 @@ const FAMOUS_STREETS:[string,string][]=[
  ["Portland Road","波特兰路"],["Oxford Street","牛津街"],["Regent Street","摄政街"],["Bond Street","邦德街"],["Baker Street","贝克街"],["Fleet Street","舰队街"],["Downing Street","唐宁街"],["Abbey Road","艾比路"],["Carnaby Street","卡纳比街"],["King’s Road","国王路"],["The Strand","河岸街"],["Whitehall","白厅"],["Savile Row","萨维尔街"],["Jermyn Street","杰明街"],["Shaftesbury Avenue","沙夫茨伯里大道"],["Pall Mall","蓓尔美尔街"],["Park Lane","公园巷"],["Tottenham Court Road","托特纳姆法院路"],["Marylebone High Street","马里波恩高街"],["Camden High Street","卡姆登高街"],["Brick Lane","砖巷"],["Kingsway","国王道"],["Charing Cross Road","查令十字路"],["Brompton Road","布朗普顿路"],["Kensington High Street","肯辛顿高街"],["Old Compton Street","老康普顿街"],["Wardour Street","沃多街"],["Great Marlborough Street","大马尔伯勒街"],["Ludgate Hill","拉德盖特山"],["Cheapside","奇普赛德"],["Threadneedle Street","针线街"],["Gracechurch Street","恩典堂街"],["Lombard Street","朗伯德街"],["Cannon Street","坎农街"],["Bishopsgate","主教门街"]
 ];
 let streetCursor=0;
-const EXTRA_SPACES=EXTRA_ROUTE_CELLS.map((cell,i)=>{if(cell===48)return{name:"London Stock Exchange",cn:"伦敦交易所",type:"stock" as SpaceType,color:"#715aa4"};const[streetName,streetCn]=FAMOUS_STREETS[streetCursor++]||[`London Street ${streetCursor}`,`伦敦街道 ${streetCursor}`],tier=i%7,commercial=i%3===0;return{name:streetName,cn:streetCn,type:"property" as SpaceType,price:165+tier*24+Math.floor(i/7)*12,rent:14+tier*3+Math.floor(i/8)*2,color:["#e7a09c","#d7c58a","#b8cba0","#abcadf","#c6b3d7"][i%5],commercial}});
+const EXTRA_SPACES=EXTRA_ROUTE_CELLS.map((cell,i)=>{if(cell===18)return{name:"London Stock Exchange",cn:"伦敦交易所",type:"stock" as SpaceType,color:"#9b86c4"};const[streetName,streetCn]=FAMOUS_STREETS[streetCursor++]||[`London Street ${streetCursor}`,`伦敦街道 ${streetCursor}`],tier=i%5,commercial=i%3===0;return{name:streetName,cn:streetCn,type:"property" as SpaceType,price:175+tier*28+Math.floor(i/5)*14,rent:15+tier*4+Math.floor(i/6)*2,color:["#e8a29d","#e5c77f","#a9c99e","#9fc8da","#c2acd8"][i%5],commercial}});
 SPACES.push(...EXTRA_SPACES);
 const money=(n:number)=>`£${Math.round(n).toLocaleString("en-GB")}`;
 const levelMax=(_kind:BuildKind)=>5;
