@@ -23,21 +23,21 @@ test("server renders the London Tycoon home screen", async () => {
   assert.match(html, /56/);
 });
 
-test("board keeps route, landmarks, streets, buildings, and pawns separate", async () => {
+test("board keeps equal route cells, upgrades, controls, and pawns separate", async () => {
   const [board, mapData, styles] = await Promise.all([
     readFile(new URL("../app/game-board.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/game-map-data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/game-board.css", import.meta.url), "utf8"),
   ]);
-  assert.match(mapData, /length:\s*56/);
+  assert.match(mapData, /ROUTE_CELL_COUNT = 56/);
+  assert.match(mapData, /BOARD_GRID_SIZE = 15/);
   assert.match(mapData, /LANDMARK_STATION_CELLS/);
-  assert.match(board, /board-route/);
-  assert.match(board, /landmark-stop/);
-  assert.match(board, /street-stop/);
+  assert.match(board, /board-empty-center/);
   assert.match(board, /board-development/);
   assert.match(board, /board-pawn/);
-  assert.match(styles, /london-pencil-landmarks\.png/);
-  assert.match(styles, /london-pencil-house-levels\.png/);
-  assert.match(styles, /london-pencil-hotel-levels\.png/);
-  assert.match(styles, /london-pencil-shop-levels\.png/);
+  assert.match(board, /property-upgrade-1\.png/);
+  assert.match(board, /property-upgrade-2\.png/);
+  assert.match(board, /property-upgrade-3\.png/);
+  assert.match(styles, /repeat\(15/);
+  assert.doesNotMatch(board, /board-title|board-route/);
 });
